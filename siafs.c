@@ -85,6 +85,7 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
             }
         }
         free(json_payload);
+        json_payload = NULL;
     }
 
     return 0;
