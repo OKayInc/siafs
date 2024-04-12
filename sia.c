@@ -15,7 +15,7 @@ sia_payload_t sia_cache = {
 // TODO: memcached support
 char *sia_get_from_cache(const char *src){
     if(opt.verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, src);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__,__func__, src);
     }
     if ((sia_cache.time != 0) && (sia_cache.src != NULL)){
         // there is something
@@ -36,7 +36,7 @@ char *sia_get_from_cache(const char *src){
 
 char *sia_set_to_cache(const char *src, const char *payload){
     if(opt.verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, src, payload);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, src, payload);
     }
     if ((src != NULL) && (payload != NULL)){
         if (sia_cache.src != NULL){
@@ -60,9 +60,10 @@ char *sia_set_to_cache(const char *src, const char *payload){
 size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     size_t realsize = sz * nmemb;
     if(opt.verbose){
-        fprintf(stderr, "capture_payload: %s\n", (char *)contents);
-        fprintf(stderr, "sz: %lu\n", sz);
-        fprintf(stderr, "nmemb: %lu\n", nmemb);
+        fprintf(stderr, "%s:%d %s(\"%s\", %lu, %lu)\n", __FILE_NAME__, __LINE__, __func__, (char *)contents, sz, nmemb);
+//        fprintf(stderr, "capture_payload: %s\n", (char *)contents);
+//        fprintf(stderr, "sz: %lu\n", sz);
+//        fprintf(stderr, "nmemb: %lu\n", nmemb);
     }
     sia_http_payload_t *data = (sia_http_payload_t *)ctx;
     data->len = realsize;
@@ -75,7 +76,7 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
 
 char *sia_bus_concensus_state_json(siafs_opt_t *opt){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, opt->url);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
 
     char *final_url;
@@ -125,7 +126,7 @@ char *sia_bus_concensus_state_json(siafs_opt_t *opt){
 
 unsigned short int sia_bus_concensus_state_synced(siafs_opt_t *opt){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, opt->url);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
     char *json_payload = sia_bus_concensus_state_json(opt);
     if (json_payload != NULL){
@@ -155,7 +156,7 @@ unsigned short int sia_bus_concensus_state_synced(siafs_opt_t *opt){
 
 unsigned int sia_bus_concensus_state_blockheight(siafs_opt_t *opt){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, opt->url);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
     char *json_payload = sia_bus_concensus_state_json(opt);
     if (json_payload != NULL){
@@ -183,7 +184,7 @@ unsigned int sia_bus_concensus_state_blockheight(siafs_opt_t *opt){
 
 char *sia_bus_concensus_state_lastblocktime(siafs_opt_t *opt){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, opt->url);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
     char *json_payload = sia_bus_concensus_state_json(opt);
     if (json_payload != NULL){
@@ -211,8 +212,8 @@ char *sia_bus_concensus_state_lastblocktime(siafs_opt_t *opt){
 }
 
 char *sia_bus_objects_json(siafs_opt_t *opt, const char *path){
-        if(opt->verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, opt->url, path);
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
 
     char *final_url;
@@ -268,7 +269,7 @@ char *sia_bus_objects_json(siafs_opt_t *opt, const char *path){
 
 unsigned short int sia_bus_objects_is_dir(siafs_opt_t *opt, const char *path){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, opt->url, path);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
@@ -294,8 +295,9 @@ unsigned short int sia_bus_objects_is_dir(siafs_opt_t *opt, const char *path){
 
 unsigned short int sia_bus_objects_is_file(siafs_opt_t *opt, const char *path){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, opt->url, path);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
+
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
         if(opt->verbose){
@@ -320,7 +322,7 @@ unsigned short int sia_bus_objects_is_file(siafs_opt_t *opt, const char *path){
 
 unsigned int sia_bus_objects_size(siafs_opt_t *opt, const char *path){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, opt->url, path);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
@@ -349,8 +351,9 @@ unsigned int sia_bus_objects_size(siafs_opt_t *opt, const char *path){
 
 char *sia_bus_objects_modtime(siafs_opt_t *opt, const char *path){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s, %s\")\n", __func__, opt->url, path);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
+
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
         if(opt->verbose){
@@ -379,7 +382,7 @@ char *sia_bus_objects_modtime(siafs_opt_t *opt, const char *path){
 
 char *sia_worker_objects(siafs_opt_t *opt, const char *path, size_t *size, off_t *offset){
     if(opt->verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, opt->url);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
 
     CURL *curl = curl_easy_init();

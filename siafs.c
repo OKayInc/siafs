@@ -3,9 +3,9 @@
 
 extern siafs_opt_t opt;
 
-static int siafs_getattr(const char *path, struct stat *stbuf){
+int siafs_getattr(const char *path, struct stat *stbuf){
     if(opt.verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, path);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
     memset(stbuf, 0, sizeof(struct stat));
 
@@ -42,9 +42,9 @@ static int siafs_getattr(const char *path, struct stat *stbuf){
     return 0;
 }
 
-static int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
+int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
     if(opt.verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, path);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
@@ -77,18 +77,12 @@ static int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     return 0;
 }
 
-static int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
     if(opt.verbose){
-        fprintf(stderr, "%s(\"%s\")\n", __func__, path);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
     size_t payload_size = size;
     off_t payload_offset = offset;
     sia_worker_objects(&opt, path, &payload_size, &payload_offset);
     return payload_size - payload_offset;
 }
-
-static struct fuse_operations operations = {
-    .getattr	= siafs_getattr,
-    .readdir	= siafs_readdir,
-    .read       = siafs_read,
-};

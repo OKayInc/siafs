@@ -35,6 +35,12 @@ siafs_opt_t opt = {
     .maxhandle = 10,
 };
 
+static struct fuse_operations operations = {
+    .getattr	= siafs_getattr,
+    .readdir	= siafs_readdir,
+    .read       = siafs_read,
+};
+
 int parse_url(const char *url){
     if(opt.verbose){
         fprintf(stderr, "%s(\"%s\")\n", __func__, url);
@@ -157,19 +163,23 @@ int main(int argc, char *argv[]){
         fprintf(stderr, "sia_concensus_state_synced is false!\n");
         exit(EXIT_FAILURE);
     }
-    
+/**
     // Experiments
  CURL *curl = curl_easy_init();
- char *u = "/home/test.pdf";
+ char *u = "EPSON ET-8550 L8180 Series Velvet Fine Art.icc";
   if(curl) {
     int i;
-    char *output = curl_easy_unescape(curl, u, strlen(u), &i);
+//    char *output = curl_easy_unescape(curl, u, strlen(u), &i);
+    char *output = curl_easy_escape(curl, u, strlen(u));
     if(output) {
-      printf("Encoded: %s\n", output);
+      printf("Decoded: %s\n", output);
       curl_free(output);
     }
     curl_easy_cleanup(curl);
   };
-    
-exit(EXIT_SUCCESS);
+
+  **/
+    fuse_main(args.argc, args.argv, &operations, NULL);
+    fuse_opt_free_args(&args);
+    exit(EXIT_SUCCESS);
 }
