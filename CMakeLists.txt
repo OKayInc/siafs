@@ -8,10 +8,20 @@ add_executable(siafs
     main.c
     defaults.h
     structures.h
-    siafs.c
     siafs.h
-    sia.c
+    siafs.c
     sia.h
+    sia.c
+    sia_common.h
+    sia_common.c
+    sia_bus_accounts.h
+    sia_bus_accounts.c
+    sia_bus_consensus.h
+    sia_bus_consensus.c
+    sia_bus_objects.h
+    sia_bus_objects.c
+    sia_worker_objects.h
+    sia_worker_objects.c
     urlcode.c
     urlcode.h
     )

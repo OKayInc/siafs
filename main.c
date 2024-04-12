@@ -21,7 +21,7 @@
 // TODO: find a better regexp
 #define URL_REGEX "[a-zA-Z0-9.-:@]+(/[^[:space:]]*)?$"
 /* default options */
-siafs_opt_t opt = {
+sia_cfg_t opt = {
     .url = NULL,
     .scheme = SIAFS_DEFAULT_SCHEME,
     .host = SIAFS_DEFAULT_HOST,
@@ -151,16 +151,16 @@ int main(int argc, char *argv[]){
 
     parse_url(opt.url);
     unsigned short int p;
-    if (sia_bus_concensus_state_synced(&opt) == 1){
+    if (sia_bus_consensus_state_synced(&opt) == 1){
         fprintf(stderr, "sia_concensus_state_synced is true!\n");
-        unsigned int bh = sia_bus_concensus_state_blockheight(&opt);
+        unsigned int bh = sia_bus_consensus_state_blockheight(&opt);
         fprintf(stderr, "sia_concensus_state_blockheight is %u\n", bh);
-        char *lbt = sia_bus_concensus_state_lastblocktime(&opt);
+        char *lbt = sia_bus_consensus_state_lastblocktime(&opt);
         fprintf(stderr, "sia_concensus_state_lastblocktime is %s\n", lbt);
 
     }
     else{
-        fprintf(stderr, "sia_concensus_state_synced is false!\n");
+        fprintf(stderr, "sia_consensus_state_synced is false!\n");
         exit(EXIT_FAILURE);
     }
 /**
