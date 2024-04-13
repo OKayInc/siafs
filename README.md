@@ -27,7 +27,7 @@ siafs uses `CMake`.
 
 ## How to Use It
 Just type:
-`/siafs -d -v http://:yourpassword@yourIP:port/bucket mountpoint`
+`siafs http://:yourpassword@yourIP:port/bucket mountpoint`
 If the bucket is omitted, it will use the default one.
 
 ## Known Issues
