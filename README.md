@@ -2,7 +2,10 @@
 SIA FUSE Filesystem, sponsored by the SIA Foundation.
 
 ## Status
-Not working yet.
+* Mounting volumes work.
+* Listing directories work.
+* Creating directories work.
+* Reading files work.
 
 ## Installing
 siafs uses `CMake`.
@@ -22,11 +25,19 @@ siafs uses `CMake`.
 * libcurl
 * libfuse 2.9+
 
+## How to Use It
+Just type:
+`/siafs -d -v http://:yourpassword@yourIP:port/bucket mountpoint`
+If the bucket is omitted, it will use the default one.
+
 ## Known Issues
 (not yet)
 
 ## TODO
-(not yet)
+* creating binary files
+* renaming files and directories
+* rewriting on pre-existing files
+* mount wrappers
 
 ## More Information
 (not yet)
