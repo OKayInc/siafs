@@ -39,6 +39,7 @@ static struct fuse_operations operations = {
     .getattr	= siafs_getattr,
     .readdir	= siafs_readdir,
     .read       = siafs_read,
+    .mkdir      = siafs_mkdir,
 };
 
 int parse_url(const char *url){

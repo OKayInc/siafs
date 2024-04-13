@@ -26,22 +26,33 @@ int siafs_getattr(const char *path, struct stat *stbuf){
 */
     
     if(!strcmp(path, "/")){
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d / directory\n", __FILE_NAME__, __LINE__);
+        }
         stbuf->st_ino = 1;
         stbuf->st_mode = S_IFDIR | 0777;
         stbuf->st_nlink = 2;
         stbuf->st_mtime = time(NULL);   // If / sends todays mod time, SIA doesn't return information for /
     }
     else if (sia_bus_objects_is_file(&opt, path) == 1 ){
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d %s is a file\n", __FILE_NAME__, __LINE__, path);
+        }
         stbuf->st_mode = S_IFREG | 666;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = sia_bus_objects_size(&opt, path);    // FIX this
+		stbuf->st_size = sia_bus_object_size(&opt, path);    // FIX this
         stbuf->st_mtime = time(NULL);   // Temporal
-
     }
     else if (sia_bus_objects_is_dir(&opt, path) == 1 ){
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d %s is a directory\n", __FILE_NAME__, __LINE__, path);
+        }
         stbuf->st_mode = S_IFDIR | 0777;
         stbuf->st_nlink = 2;
         stbuf->st_mtime = time(NULL);   // Temporal
+    }
+    else{
+        return -ENOENT;
     }
     return 0;
 }
@@ -53,7 +64,17 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
 
-    char *json_payload = sia_bus_objects_json(&opt, path);  // TODO: check if this works, or if the search endpoint is better
+    char *path2 = (char *)path;
+    if (path[(strlen(path) - 1)] != '/'){
+        // Add a / to the end
+        path2 = NULL;
+        char ch = '/';
+        path2 = malloc(sizeof(char) * strlen(path) + 1);
+        strcpy(path2, path);
+        strncat(path2, &ch, 1);
+    }
+
+    char *json_payload = sia_bus_objects_json(&opt, path2);  // TODO: check if this works, or if the search endpoint is better
     if (json_payload != NULL){
         if(opt.verbose){
             fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
@@ -76,10 +97,14 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
                         if (name->valuestring[strlen(name->valuestring) - 1] == '/'){
                             name->valuestring[strlen(name->valuestring) - 1] = '\0';
                         }
-                        if(opt.verbose){
-                            fprintf(stderr, "%s:%d filename: %s\n", __FILE_NAME__, __LINE__, name->valuestring+sizeof(char));
+                        char *fn = strrchr(name->valuestring, '/');
+                        if (fn == NULL){
+                            fn = name->valuestring;
                         }
-                        filler(buf, name->valuestring+sizeof(char), NULL, 0);
+                        if(opt.verbose){
+                            fprintf(stderr, "%s:%d filename: %s\n", __FILE_NAME__, __LINE__, fn+sizeof(char));
+                        }
+                        filler(buf, fn+sizeof(char), NULL, 0);
                     }
                 }
             }
@@ -97,6 +122,16 @@ int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fu
     }
     size_t payload_size = size;
     off_t payload_offset = offset;
-    sia_worker_objects(&opt, path, &payload_size, &payload_offset);
+    char *payload = sia_worker_get_object(&opt, path, &payload_size, &payload_offset);
+    memcpy(buf, payload + offset, size - offset);
+    free(payload);
     return payload_size - payload_offset;
+}
+
+int siafs_mkdir(const char *path, mode_t mode){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", %d)\n", __FILE_NAME__, __LINE__, __func__, path, mode);
+    }
+    sia_worker_put_object(&opt, path, 0, NULL, NULL);
+    return 0;
 }
