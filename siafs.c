@@ -122,7 +122,7 @@ int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fu
     }
     size_t payload_size = size;
     off_t payload_offset = offset;
-    char *payload = sia_worker_get_object(&opt, path, &payload_size, &payload_offset);
+    char *payload = sia_worker_get_object(&opt, path, payload_size, payload_offset);
     memcpy(buf, payload + offset, size - offset);
     free(payload);
     return payload_size - payload_offset;
@@ -132,6 +132,35 @@ int siafs_mkdir(const char *path, mode_t mode){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", %d)\n", __FILE_NAME__, __LINE__, __func__, path, mode);
     }
-    sia_worker_put_object(&opt, path, 0, NULL, NULL);
+
+    char *path2 = NULL;
+    if (path[(strlen(path) - 1)] != '/'){
+        char *path3 = (char *)path;
+        char ch = '/';
+        path2 = malloc(sizeof(char) * strlen(path3) + 1);
+        strcpy(path2, path3);
+        strncat(path2, &ch, 1);
+    }
+
+    sia_worker_put_object(&opt, path2, 0, 0, 0);
+    if (path2 != NULL){
+        free(path2);
+    }
     return 0;
+}
+
+int siafs_mknod(const char *path, mode_t mode, dev_t rdev){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", %d, %lu)\n", __FILE_NAME__, __LINE__, __func__, path, mode, rdev);
+    }
+    sia_worker_put_object(&opt, path, 0, 0, 0);
+    return 0;
+}
+
+int siafs_write( const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info ){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %zu, %ld)\n", __FILE_NAME__, __LINE__, __func__, path, buf, size, offset);
+    }
+    sia_worker_put_object(&opt, path, size, offset, (void *)buf);
+	return size;
 }

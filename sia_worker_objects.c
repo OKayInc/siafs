@@ -6,7 +6,7 @@ extern "C"
 #include "sia_worker_objects.h"
 extern sia_cfg_t opt;
 
-char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t *size, off_t *offset){
+char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
@@ -64,8 +64,8 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t *size, off_
     //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
             if (offset > 0){
                 char str[256];
-                size_t offset2 = *offset + *size;                   // TODO: review
-                sprintf(str, "%ld%s%ld", *offset, "-", offset2);
+                size_t offset2 = offset + size;                   // TODO: review
+                sprintf(str, "%ld%s%ld", offset, "-", offset2);
                 curl_easy_setopt(curl, CURLOPT_RANGE, str);
             }
             struct curl_slist *headers = NULL;
@@ -85,12 +85,13 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t *size, off_
 
         curl_easy_cleanup(curl);
         free(final_url);
+        free(path2);
         final_url = NULL;
     }
     return (char *)payload;
 }
 
-char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t *size, off_t *offset, void *ctx){
+char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
@@ -111,18 +112,6 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t *size, off_
     };
 
     // path2 has the encoded file path
-    // add an / if ctx is empty and path's last character isn't /
-    if (ctx == NULL){
-        if (path[(strlen(path) - 1)] != '/'){
-            char *path3 = path2;
-            path2 = NULL;
-            char ch = '/';
-            path2 = malloc(sizeof(char) * strlen(path3) + 1);
-            strcpy(path2, path3);
-            strncat(path2, &ch, 1);
-        }
-    }
-
     char *final_url;
     //http://127.0.0.1:9980/api/worker/objects/test with paces.pdf?bucket=default
     final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
