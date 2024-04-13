@@ -142,7 +142,7 @@ int siafs_mkdir(const char *path, mode_t mode){
         strncat(path2, &ch, 1);
     }
 
-    sia_worker_put_object(&opt, path2, 0, 0, 0);
+    sia_worker_put_object(&opt, path2, 0, 0, NULL);
     if (path2 != NULL){
         free(path2);
     }
@@ -157,7 +157,7 @@ int siafs_mknod(const char *path, mode_t mode, dev_t rdev){
     return 0;
 }
 
-int siafs_write( const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info ){
+int siafs_write( const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %zu, %ld)\n", __FILE_NAME__, __LINE__, __func__, path, buf, size, offset);
     }

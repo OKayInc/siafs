@@ -8,7 +8,7 @@ extern sia_cfg_t opt;
 
 char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu %ld)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset);
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
 
     CURL *curl = curl_easy_init();
@@ -93,7 +93,7 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
 
 char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, "(ctx)");
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
 
     CURL *curl = curl_easy_init();
@@ -134,10 +134,6 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     http_payload.data = NULL;
 
     if (payload == NULL){
-        if(opt->verbose){
-            fprintf(stderr, "%s:%d Payload is not NULL\n", __FILE_NAME__, __LINE__);
-        }
-
         CURL *curl;
         CURLcode res;
         curl = curl_easy_init();
@@ -158,23 +154,17 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             }
             **/
             struct curl_slist *headers = NULL;
-            if (ctx != NULL){
-                if(opt->verbose){
-                    fprintf(stderr, "%s:%d There is something to write\n", __FILE_NAME__, __LINE__);
-                }
-                headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
-                struct curl_slist *headers2 = NULL;
-                char cl[256] = {0};
-                sprintf(cl, "Content-Length: %lu", size - offset);
-                headers2 = curl_slist_append(headers, cl);
-                curl_easy_setopt(curl, CURLOPT_POSTFIELDS,ctx);
-                headers = headers2;
-            }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-            res = curl_easy_perform(curl);
-            if (headers != NULL){
-                curl_slist_free_all(headers);
+            if (ctx != NULL){
+                curl_easy_setopt(curl,CURLOPT_POSTFIELDS,"<file contents here>");
             }
+            res = curl_easy_perform(curl);
+
+        }
+
+        payload = http_payload.data;
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)payload);
         }
         //sia_set_to_cache(final_url, http_payload.data);
 
@@ -183,7 +173,7 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
         final_url = NULL;
     }
 
-    return (char *)ctx;}
+    return (char *)payload;}
 
 #ifdef __cplusplus
 }
