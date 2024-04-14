@@ -93,7 +93,7 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
 
 char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, "(ctx)");
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, (char *)ctx);
     }
 
     CURL *curl = curl_easy_init();
@@ -133,12 +133,12 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     http_payload.len = 0;
     http_payload.data = NULL;
 
-    if (payload == NULL){
-        if(opt->verbose){
-            fprintf(stderr, "%s:%d Payload is not NULL\n", __FILE_NAME__, __LINE__);
-        }
+//    if (ctx != NULL){
+//        if(opt->verbose){
+//            fprintf(stderr, "%s:%d Payload is not NULL\n", __FILE_NAME__, __LINE__);
+//        }
 
-        CURL *curl;
+        //CURL *curl;
         CURLcode res;
         curl = curl_easy_init();
         if(curl) {
@@ -148,27 +148,42 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, opt->scheme);
             curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
             curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
-    //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-            /**
-            if (offset > 0){
-                char str[256];
-                size_t offset2 = *offset + *size;                   // TODO: review
-                sprintf(str, "%ld%s%ld", *offset, "-", offset2);
-                curl_easy_setopt(curl, CURLOPT_RANGE, str);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
             }
-            **/
+    //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
             struct curl_slist *headers = NULL;
-            if (ctx != NULL){
+            if ((ctx != NULL) && (size > 0)){
                 if(opt->verbose){
                     fprintf(stderr, "%s:%d There is something to write\n", __FILE_NAME__, __LINE__);
                 }
-                headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
-                struct curl_slist *headers2 = NULL;
+//                headers = curl_slist_append(headers, "Expect: 100-continue");
+
                 char cl[256] = {0};
-                sprintf(cl, "Content-Length: %lu", size - offset);
-                headers2 = curl_slist_append(headers, cl);
-                curl_easy_setopt(curl, CURLOPT_POSTFIELDS,ctx);
-                headers = headers2;
+                sprintf(cl, "Content-Length: %lu", size);
+                headers = curl_slist_append(headers, cl);
+                headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+//              headers = curl_slist_append(headers, "Transfer-Encoding: chunked");
+
+//                curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
+//                curl_easy_setopt(curl, CURLOPT_READFUNCTION, send_payload);
+//                http_payload.data = ctx;
+//                http_payload.len = size;
+//                curl_easy_setopt(curl, CURLOPT_READDATA, &http_payload);
+//                curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)size);
+                if (offset > 0){
+//                    Content-Range: bytes 4096-6573/2477
+                    char cr[256] = {0};
+                    size_t offset2 = offset + size;
+                    sprintf(cr, "Content-Range: bytes %" CURL_FORMAT_CURL_OFF_T "-" "%" CURL_FORMAT_CURL_OFF_T "/*", offset,  offset2);
+                    headers = curl_slist_append(headers, cr);
+//                    curl_easy_setopt(curl, CURLOPT_RESUME_FROM, offset);
+//                    char str[256];
+//                    size_t offset2 = offset + size;                   // TODO: review
+//                    sprintf(str, "%ld%s%ld", offset, "-", offset2);
+//                    curl_easy_setopt(curl, CURLOPT_RANGE, str);
+                }
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             res = curl_easy_perform(curl);
@@ -181,7 +196,7 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
         curl_easy_cleanup(curl);
         free(final_url);
         final_url = NULL;
-    }
+//    }
 
     return (char *)ctx;}
 

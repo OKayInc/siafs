@@ -12,13 +12,21 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
+size_t send_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
+    size_t realsize = sz * nmemb;
+//    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", %lu, %lu, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, "(char *)contents", sz, nmemb, "(char *)ctx");
+//    }
+    sia_http_payload_t *data = (sia_http_payload_t *)ctx;
+    memcpy(contents, data->data, data->len);
+
+    return data->len;
+}
+
 size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     size_t realsize = sz * nmemb;
     if(opt.verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", %lu, %lu)\n", __FILE_NAME__, __LINE__, __func__, (char *)contents, sz, nmemb);
-//        fprintf(stderr, "capture_payload: %s\n", (char *)contents);
-//        fprintf(stderr, "sz: %lu\n", sz);
-//        fprintf(stderr, "nmemb: %lu\n", nmemb);
+        fprintf(stderr, "%s:%d %s(\"%s\", %lu, %lu, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, "(char *)contents", sz, nmemb, "(char *)ctx");
     }
     sia_http_payload_t *data = (sia_http_payload_t *)ctx;
     if (data->len == 0){

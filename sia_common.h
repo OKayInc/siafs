@@ -39,6 +39,7 @@ typedef struct{
     unsigned int maxhandle;
 }sia_cfg_t;
 
+size_t send_payload(void *contents, size_t sz, size_t nmemb, void *ctx);
 size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx);
 
 char *sia_get_from_cache(const char *src);
