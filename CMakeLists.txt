@@ -18,6 +18,8 @@ add_executable(siafs
     sia_bus_accounts.c
     sia_bus_consensus.h
     sia_bus_consensus.c
+    sia_bus_multiparts.h
+    sia_bus_multiparts.c
     sia_bus_objects.h
     sia_bus_objects.c
     sia_worker_objects.h

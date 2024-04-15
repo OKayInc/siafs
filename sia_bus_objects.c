@@ -88,8 +88,8 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
     }
 
     char *final_url;
-    final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
-                        21+1);
+    final_url = malloc( sizeof(opt->unauthenticated_url)*(strlen(opt->unauthenticated_url)+
+                        21+1));
     strcpy(final_url, opt->unauthenticated_url);
     strcat(final_url, "api/bus/objects/list");
 

@@ -47,7 +47,7 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
         }
 
         if(opt->verbose){
-            fprintf(stderr, "%s payload: %s\n", __func__, (char *)http_payload.data);
+            fprintf(stderr, "%s:%d payload: %s\n", __FILE_NAME__, __LINE__, (char *)http_payload.data);
         }
         sia_set_to_cache(final_url, http_payload.data);
         payload = http_payload.data;
@@ -65,20 +65,20 @@ unsigned short int sia_bus_consensus_state_synced(sia_cfg_t *opt){
     char *json_payload = sia_bus_consensus_state_json(opt);
     if (json_payload != NULL){
         if(opt->verbose){
-            fprintf(stderr, "json payload: %s\n", json_payload);
+            fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
         }
         cJSON *monitor_json = cJSON_Parse(json_payload);
         free(json_payload);
         if (monitor_json == NULL){
             const char *error_ptr = cJSON_GetErrorPtr();
-            fprintf(stderr, "Error before: %s\n", error_ptr);
+            fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
         }
         else{
             cJSON *synced = NULL;
             synced = cJSON_GetObjectItemCaseSensitive(monitor_json, "synced");
             if (cJSON_IsBool(synced)){
                  if(opt->verbose){
-                    fprintf(stderr, "synced value: %u\n", cJSON_IsTrue(synced));
+                    fprintf(stderr, "%s:%d synced value: %u\n", __FILE_NAME__, __LINE__, cJSON_IsTrue(synced));
                  }
                  return cJSON_IsTrue(synced);
             }
@@ -95,19 +95,19 @@ unsigned int sia_bus_consensus_state_blockheight(sia_cfg_t *opt){
     char *json_payload = sia_bus_consensus_state_json(opt);
     if (json_payload != NULL){
         if(opt->verbose){
-            fprintf(stderr, "json payload: %s\n", json_payload);
+            fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
         }
         cJSON *monitor_json = cJSON_Parse(json_payload);
         if (monitor_json == NULL){
             const char *error_ptr = cJSON_GetErrorPtr();
-            fprintf(stderr, "Error before: %s\n", error_ptr);
+            fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
         }
         else{
             cJSON *blockheight = NULL;
             blockheight = cJSON_GetObjectItemCaseSensitive(monitor_json, "blockHeight");
             if (cJSON_IsNumber(blockheight)){
                  if(opt->verbose){
-                    fprintf(stderr, "blockheight value: %u\n", blockheight->valueint);
+                    fprintf(stderr, "%s:%d blockheight value: %u\n", __FILE_NAME__, __LINE__, blockheight->valueint);
                  }
                  return blockheight->valueint;
             }

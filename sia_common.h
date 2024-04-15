@@ -15,6 +15,17 @@ extern "C"
 #define SIA_CACHE_TTL   5
 
 typedef struct{
+    char *etag;
+} sia_uploaded_part_t;
+
+typedef struct sia_upload_s{
+    sia_uploaded_part_t part[10000];
+    char *name;
+    struct  sia_upload_s *next;
+    unsigned short int done;
+} sia_upload_t;
+
+typedef struct{
     char *src;
     char *payload;
     time_t time;
@@ -37,6 +48,7 @@ typedef struct{
     char *unauthenticated_url;
     short verbose;
     unsigned int maxhandle;
+    sia_upload_t *uploads;
 }sia_cfg_t;
 
 size_t send_payload(void *contents, size_t sz, size_t nmemb, void *ctx);

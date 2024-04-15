@@ -33,6 +33,7 @@ sia_cfg_t opt = {
     .unauthenticated_url = NULL,
     .verbose = 0,
     .maxhandle = 10,
+    .uploads = NULL,
 };
 
 static struct fuse_operations operations = {
