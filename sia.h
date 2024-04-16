@@ -11,6 +11,7 @@ extern "C"
 #include "sia_common.h"
 #include "sia_bus_accounts.h"
 #include "sia_bus_consensus.h"
+#include "sia_bus_multiparts.h"
 #include "sia_bus_objects.h"
 
 #include "sia_worker_objects.h"

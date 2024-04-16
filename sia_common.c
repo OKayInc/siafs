@@ -12,6 +12,70 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
+sia_upload_t *add_upload(sia_cfg_t *opt, sia_upload_t *upload){
+    sia_upload_t *current = NULL;
+    if (opt->uploads != NULL){
+        current = opt->uploads;
+        while (current->next != NULL){
+            current = current->next;
+        }
+        current->next = upload;
+        current->next->next = NULL; // Safety
+    }
+    else{
+        opt->uploads = upload;
+        opt->uploads->next = NULL; // Safety
+        current = opt->uploads;
+    }
+
+    return current;
+}
+
+sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload){
+    sia_upload_t *current = opt->uploads;
+    sia_upload_t *before = NULL;
+
+    for (int i = 0; i < SIA_MAX_PARTS; i++){
+        if (upload->part[i].etag != NULL){
+            free(upload->part[i].etag);
+            upload->part[i].etag = NULL;
+        }
+    }
+
+    if (upload == current){
+        // Delete first node
+        opt->uploads = upload->next;
+        free(upload);
+    }
+    else{
+        // Find one node before;
+        before = current;
+        while ((before->next != upload) && before->next){
+            before = before->next;
+        }
+
+        if (before->next == upload){
+            before->next = upload->next;
+            free(upload);
+        }
+    }
+
+    return opt->uploads;
+}
+
+sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path){
+    sia_upload_t *current = opt->uploads;
+
+    while (strcmp(current->name, path) && current->next){
+        current = current->next;
+    }
+
+    if (strcmp(current->name, path))
+        current = NULL;
+
+    return current;
+}
+
 size_t send_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     size_t realsize = sz * nmemb;
 //    if(opt.verbose){

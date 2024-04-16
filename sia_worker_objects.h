@@ -8,6 +8,7 @@ extern "C"
 #include "sia_common.h"
 
 char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset);
+char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size, off_t offset, void *ctx);
 char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void* payload);
 
 #ifdef __cplusplus

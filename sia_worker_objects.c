@@ -91,6 +91,92 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     return (char *)payload;
 }
 
+char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size, off_t offset, void *ctx){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, (char *)ctx);
+    }
+    char *final_url;
+    //http://127.0.0.1:9980/api/worker/multipart/:key?bucket=mybucket&uploadid=0bdbea34e2be1b3de7c60766dc1a9f400e0cf6d2db8f5f3842720f8549559f29&partnumber=1"
+    final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
+                        27+
+                        sizeof(opt->bucket)*strlen(opt->bucket)+
+                        10+
+                        sizeof(uploadid)*strlen(uploadid)+
+                        12+5+
+                        1);
+    strcpy(final_url, opt->unauthenticated_url);
+    strcat(final_url, "api/worker/multipart/:key");
+    strcat(final_url, "?bucket=");
+    strcat(final_url, opt->bucket);
+    strcat(final_url, "&uploadid=");
+    strcat(final_url, uploadid);
+    strcat(final_url, "&partnumber=");
+    char str_offset[6];
+    sprintf(str_offset, "%ld", size);
+    strcat(final_url, str_offset);
+
+    if(opt->verbose){
+        fprintf(stderr, "%s(\"%s\")\n", __func__, final_url);
+    }
+
+    void *payload = NULL;
+    sia_http_payload_t http_h_payload;
+    http_h_payload.len = 0;
+    http_h_payload.data = NULL;
+
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_easy_setopt(curl, CURLOPT_URL, final_url);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, opt->scheme);
+        curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
+        if(opt->verbose){
+            curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        }
+//        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        struct curl_slist *headers = NULL;
+        if ((ctx != NULL) && (size > 0)){
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d There is something to write\n", __FILE_NAME__, __LINE__);
+            }
+
+            char cl[256] = {0};
+            sprintf(cl, "Content-Length: %lu", size);
+            headers = curl_slist_append(headers, cl);
+//            headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
+        }
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        res = curl_easy_perform(curl);
+        struct curl_header *header;
+        CURLHcode h;
+        h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+            fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+        }
+        if (h == CURLHE_OK){
+            http_h_payload.data = malloc((sizeof(char) * strlen(header->value) + 1));
+            strcpy(http_h_payload.data, header->value);
+            http_h_payload.len = strlen(header->value);
+        }
+        if (headers != NULL){
+            curl_slist_free_all(headers);
+        }
+    }
+    //sia_set_to_cache(final_url, http_payload.data);
+
+    curl_easy_cleanup(curl);
+    free(final_url);
+    final_url = NULL;
+
+    return (char *)http_h_payload.data;
+}
+
 char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, (char *)ctx);
@@ -198,7 +284,8 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
         final_url = NULL;
 //    }
 
-    return (char *)ctx;}
+    return (char *)ctx;
+}
 
 #ifdef __cplusplus
 }

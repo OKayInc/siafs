@@ -157,7 +157,7 @@ int siafs_mknod(const char *path, mode_t mode, dev_t rdev){
     return 0;
 }
 
-int siafs_write( const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info){
+int siafs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %zu, %ld)\n", __FILE_NAME__, __LINE__, __func__, path, "(buf)", size, offset);
     }
@@ -165,11 +165,40 @@ int siafs_write( const char *path, const char *buf, size_t size, off_t offset, s
         // Smaller files are sent through the simple API
         sia_worker_put_object(&opt, path, size, offset, (void *)buf);
     }
-    else if ((offset == 0) && (size == 4096)){
-        // First block of a big file
-    }
-    else if (offset > 0){
-        // other blocks of a big file
+    else{
+        char *upload_id = sia_bus_get_uploadid(&opt, (char *)path);
+        char *etag = sia_worker_put_multipart(&opt, upload_id, size, offset, (void *)buf);
+        if (etag != NULL){
+            sia_upload_t *upload;
+            if (offset == 0){
+                upload = malloc(sizeof(sia_upload_t));
+                upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+                strcpy(upload->name, path);
+                upload->done = 0;
+                for (int i = 0; i < SIA_MAX_PARTS; i++){
+                    upload->part[i].etag = NULL;
+                }
+                opt.uploads = add_upload(&opt, upload);
+            }
+            else{
+                upload = find_upload_by_path(&opt, path);
+            }
+            upload->part[offset+1].etag = etag;
+        }
+        else{
+            return 0;
+        }
     }
 	return size;
+}
+
+int siafs_release(const char *path, struct fuse_file_info *info){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, path, "(info)");
+    }
+
+    if (!sia_bus_objects_exists(&opt, path)){
+        // file file doesn't exist then it is a multipart write op
+    }
+    return 0;
 }

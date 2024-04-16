@@ -9,6 +9,7 @@ extern "C"
 
 char *sia_bus_objects_json(sia_cfg_t *opt, const char *path);
 char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path);
+unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path);
 unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path);
 unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path);
 unsigned int sia_bus_object_size(sia_cfg_t *opt, const char *path);
