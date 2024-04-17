@@ -71,7 +71,7 @@ sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload){
 
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path){
     sia_upload_t *current = opt->uploads;
-    if (path != NULL){
+    if ((path != NULL) && (current != NULL)){
         while (strcmp(current->name, path) && current->next){
             current = current->next;
         }

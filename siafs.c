@@ -168,7 +168,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     }
     else{
         char *upload_id = sia_bus_get_uploadid(&opt, path);
-        char *etag = sia_worker_put_multipart(&opt, upload_id, size, offset, (void *)buf);
+        char *etag = sia_worker_put_multipart(&opt, path, upload_id, size, offset, (void *)buf);
         if (etag != NULL){
             sia_upload_t *upload;
 

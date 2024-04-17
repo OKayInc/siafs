@@ -90,21 +90,24 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     return (char *)payload;
 }
 
-char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size, off_t offset, void *ctx){
+char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *uploadid, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, (char *)ctx);
     }
     char *final_url;
     //http://127.0.0.1:9980/api/worker/multipart/:key?bucket=mybucket&uploadid=0bdbea34e2be1b3de7c60766dc1a9f400e0cf6d2db8f5f3842720f8549559f29&partnumber=1"
     final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
-                        27+
+                        21+
+                        sizeof(path)*strlen(path)+
+                        8+
                         sizeof(opt->bucket)*strlen(opt->bucket)+
                         10+
                         sizeof(uploadid)*strlen(uploadid)+
-                        12+5+
+                        12+
                         1);
     strcpy(final_url, opt->unauthenticated_url);
-    strcat(final_url, "api/worker/multipart/:key");
+    strcat(final_url, "api/worker/multipart");
+    strcat(final_url, path); // Where is it
     strcat(final_url, "?bucket=");
     strcat(final_url, opt->bucket);
     strcat(final_url, "&uploadid=");
@@ -148,7 +151,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size
             char cl[256] = {0};
             sprintf(cl, "Content-Length: %lu", size);
             headers = curl_slist_append(headers, cl);
-//            headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+            headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);

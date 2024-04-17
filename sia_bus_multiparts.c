@@ -348,7 +348,7 @@ char *sia_bus_multipart_create_json(sia_cfg_t *opt, const char *path, const char
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-            char *post_data_format ="{\n    \"bucket\": \"%s\",\n    \"key\": \"key:%s\",\n    \"path\": \"%s\"\n}";;
+            char *post_data_format ="{\n    \"bucket\": \"%s\",\n    \"key\": \"key:%s\",\n    \"path\": \"%s\", \"generateKey\": false\n}";;
             char *post_data = malloc(sizeof(char) * (strlen(post_data_format) + strlen(opt->bucket) + strlen(path) + strlen(key)) + 1);
             sprintf(post_data, post_data_format, opt->bucket, key, path);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
