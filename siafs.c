@@ -12,7 +12,7 @@ int siafs_getattr(const char *path, struct stat *stbuf){
     stbuf->st_uid = fuse_get_context()->uid;
     stbuf->st_gid = fuse_get_context()->gid;
     stbuf->st_atime = time(NULL);
-/*
+/**
     char timestamp[32] = {0};
     strcpy(timestamp, sia_bus_objects_modtime(&opt, path));  TODO: Review this
     struct tm tm;
@@ -23,7 +23,7 @@ int siafs_getattr(const char *path, struct stat *stbuf){
     else{
         stbuf->st_mtime = time(NULL);
     }
-*/
+**/
     
     if(!strcmp(path, "/")){
         if(opt.verbose){
@@ -108,6 +108,7 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
                     }
                 }
             }
+            cJSON_Delete(monitor_json);
         }
         free(json_payload);
         json_payload = NULL;
@@ -166,24 +167,35 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         sia_worker_put_object(&opt, path, size, offset, (void *)buf);
     }
     else{
-        char *upload_id = sia_bus_get_uploadid(&opt, (char *)path);
+        char *upload_id = sia_bus_get_uploadid(&opt, path);
         char *etag = sia_worker_put_multipart(&opt, upload_id, size, offset, (void *)buf);
         if (etag != NULL){
             sia_upload_t *upload;
+
             if (offset == 0){
                 upload = malloc(sizeof(sia_upload_t));
                 upload->name = malloc(sizeof(const char) * strlen(path) + 1);
                 strcpy(upload->name, path);
-                upload->done = 0;
+                upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+                strcpy(upload->uploadID, upload_id);
                 for (int i = 0; i < SIA_MAX_PARTS; i++){
                     upload->part[i].etag = NULL;
                 }
-                opt.uploads = add_upload(&opt, upload);
+                opt.uploads = append_upload(&opt, upload);
             }
             else{
                 upload = find_upload_by_path(&opt, path);
             }
-            upload->part[offset+1].etag = etag;
+            off_t slot = offset / 4096;
+            upload->part[slot].etag = etag;
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d Upload Name: %s uploadID: %s\n", __FILE_NAME__, __LINE__, upload->name, upload->uploadID);
+                fprintf(stderr, "%s:%d Slot: %ld eTag: %s\n", __FILE_NAME__, __LINE__, slot, upload->part[slot].etag);
+            }
+
+            for (int i = 0; (i <= slot); i++){
+                fprintf(stderr, "%s:%d\t%d: %s\n", __FILE_NAME__, __LINE__, i, upload->part[i].etag);
+            }
         }
         else{
             return 0;
@@ -197,8 +209,12 @@ int siafs_release(const char *path, struct fuse_file_info *info){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, path, "(info)");
     }
 
-    if (!sia_bus_objects_exists(&opt, path)){
-        // file file doesn't exist then it is a multipart write op
+    if (sia_bus_objects_is_file(&opt, path) || (sia_bus_object_size(&opt, path) == 0)){
+        // the file is zero bytesthen it might a multipart write op
+        sia_upload_t *upload = find_upload_by_path(&opt, path);
+        if (upload != NULL){
+            char *etag = sia_bus_multipart_complete_json(&opt, path, upload->uploadID);
+        }
     }
     return 0;
 }

@@ -22,8 +22,8 @@ typedef struct{
 typedef struct sia_upload_s{
     sia_uploaded_part_t part[SIA_MAX_PARTS];
     char *name;
+    char *uploadID;
     struct  sia_upload_s *next;
-    unsigned short int done;
 } sia_upload_t;
 
 typedef struct{
@@ -52,7 +52,7 @@ typedef struct{
     sia_upload_t *uploads;
 }sia_cfg_t;
 
-sia_upload_t *add_upload(sia_cfg_t *opt, sia_upload_t *upload);
+sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path);
 

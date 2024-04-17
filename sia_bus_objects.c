@@ -60,13 +60,15 @@ char *sia_bus_objects_json(sia_cfg_t *opt, const char *path){
             curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
             curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
     //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            }
             struct curl_slist *headers = NULL;
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
-
         }
 
         if(opt->verbose){
@@ -115,6 +117,9 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
             curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
             curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
 //          curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            }
             struct curl_slist *headers = NULL;
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
@@ -125,6 +130,7 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
             sprintf(post_data, post_data_format, opt->bucket, path);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            free(post_data);
         }
 
         if(opt->verbose){
@@ -142,6 +148,7 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
 }
 
 unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
+    unsigned short int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
@@ -161,21 +168,27 @@ unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
             cJSON *objects = NULL;
             cJSON *object = NULL;
             objects = cJSON_GetObjectItemCaseSensitive(monitor_json, "objects");
-            if (objects){
+            if (objects != NULL){
                 cJSON_ArrayForEach(object, objects){
                     cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
                     cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
                     if (!strcmp(name->valuestring, path)){
-                        return 1;
+                        if(opt->verbose){
+                            fprintf(stderr, "%s:%d Found: %s\n", __FILE_NAME__, __LINE__, name->valuestring);
+                        }
+                        answer = 1;
+                        break;
                     }
                 }
             }
+            cJSON_Delete(monitor_json);
         }
     }
-    return 0;
+    return answer;
 }
 
 unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
+    unsigned short int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
@@ -184,12 +197,13 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
     if (path[(strlen(path) - 1)] != '/'){
         // Add a / to the end
         char ch = '/';
-        path2 = malloc(sizeof(char) * strlen(path) + 1);
+        path2 = malloc(sizeof(char) * strlen(path) + 2);
         strcpy(path2, path);
         strncat(path2, &ch, 1);
     }
     else{
-        path2 = (char *)path;
+        path2 = malloc(sizeof(char) * strlen(path) + 1);
+        strcpy(path2, path);
     }
 
     char *json_payload = sia_bus_objects_list_json(opt, path2);
@@ -212,18 +226,19 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
                     cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
                     cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
                     if (!strcmp(name->valuestring, path2) && (size->valueint == 0)){
-                        free(path2);
-                        return 1;
+                        answer =  1;
                     }
                 }
             }
+            cJSON_Delete(monitor_json);
         }
     }
     free(path2);
-    return 0;
+    return answer;
 }
 
 unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
+    unsigned short int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
@@ -234,6 +249,7 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
             fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
         }
         cJSON *monitor_json = cJSON_Parse(json_payload);
+        free(json_payload);
         if (monitor_json == NULL){
             const char *error_ptr = cJSON_GetErrorPtr();
             fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
@@ -242,15 +258,16 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
             cJSON *object = NULL;
             object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
             if (object){
-                return cJSON_IsObject(object);
+                answer =  cJSON_IsObject(object);
             }
+            cJSON_Delete(monitor_json);
         }
-        free(json_payload);
     }
-    return 0;
+    return answer;
 }
 
-unsigned int sia_bus_object_size(sia_cfg_t *opt, const char *path){
+unsigned long int sia_bus_object_size(sia_cfg_t *opt, const char *path){
+    unsigned long int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
@@ -271,15 +288,17 @@ unsigned int sia_bus_object_size(sia_cfg_t *opt, const char *path){
             if (object){
                 cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
                 if (cJSON_IsNumber(size)){
-                    return size->valueint;
+                    answer = size->valueint;
                 }
             }
+            cJSON_Delete(monitor_json);
         }
     }
-    return 0;
+    return answer;
 }
 
 char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
+    char *answer = NULL;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
@@ -301,12 +320,14 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
             if (object){
                 cJSON *modtime = cJSON_GetObjectItemCaseSensitive(object, "modTime");
                 if (cJSON_IsString(modtime)){
-                    return modtime->valuestring;
+                    answer = malloc(sizeof(modtime->valuestring) * strlen(modtime->valuestring) + 1);
+                    strcpy(answer, modtime->valuestring);
                 }
             }
+            cJSON_Delete(monitor_json);
         }
     }
-    return 0;
+    return answer;
 }
 #ifdef __cplusplus
 }

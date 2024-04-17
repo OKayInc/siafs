@@ -12,22 +12,23 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
-sia_upload_t *add_upload(sia_cfg_t *opt, sia_upload_t *upload){
+sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload){
     sia_upload_t *current = NULL;
-    if (opt->uploads != NULL){
-        current = opt->uploads;
-        while (current->next != NULL){
-            current = current->next;
+    if (upload != NULL){
+        if (opt->uploads != NULL){
+            current = opt->uploads;
+            while (current->next != NULL){
+                current = current->next;
+            }
+            current->next = upload;
+            current->next->next = NULL; // Safety
         }
-        current->next = upload;
-        current->next->next = NULL; // Safety
+        else{
+            opt->uploads = upload;
+            opt->uploads->next = NULL; // Safety
+            current = opt->uploads;
+        }
     }
-    else{
-        opt->uploads = upload;
-        opt->uploads->next = NULL; // Safety
-        current = opt->uploads;
-    }
-
     return current;
 }
 
@@ -35,44 +36,52 @@ sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload){
     sia_upload_t *current = opt->uploads;
     sia_upload_t *before = NULL;
 
-    for (int i = 0; i < SIA_MAX_PARTS; i++){
-        if (upload->part[i].etag != NULL){
-            free(upload->part[i].etag);
-            upload->part[i].etag = NULL;
-        }
-    }
-
-    if (upload == current){
-        // Delete first node
-        opt->uploads = upload->next;
-        free(upload);
-    }
-    else{
-        // Find one node before;
-        before = current;
-        while ((before->next != upload) && before->next){
-            before = before->next;
+    if (upload != NULL){
+        for (int i = 0; i < SIA_MAX_PARTS; i++){
+            if (upload->part[i].etag != NULL){
+                free(upload->part[i].etag);
+                upload->part[i].etag = NULL;
+            }
         }
 
-        if (before->next == upload){
-            before->next = upload->next;
+        free(upload->name);
+        free(upload->uploadID);
+        upload->name = upload->uploadID = NULL;
+
+        if (upload == current){
+            // Delete first node
+            opt->uploads = upload->next;
             free(upload);
         }
-    }
+        else{
+            // Find one node before;
+            before = current;
+            while ((before->next != upload) && before->next){
+                before = before->next;
+            }
 
+            if (before->next == upload){
+                before->next = upload->next;
+                free(upload);
+            }
+        }
+    }
     return opt->uploads;
 }
 
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path){
     sia_upload_t *current = opt->uploads;
+    if (path != NULL){
+        while (strcmp(current->name, path) && current->next){
+            current = current->next;
+        }
 
-    while (strcmp(current->name, path) && current->next){
-        current = current->next;
+        if (strcmp(current->name, path))
+            current = NULL;
     }
-
-    if (strcmp(current->name, path))
+    else{
         current = NULL;
-
+    }
     return current;
 }
 
@@ -95,7 +104,8 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     sia_http_payload_t *data = (sia_http_payload_t *)ctx;
     if (data->len == 0){
         data->len = realsize;
-        data->data = malloc(sizeof(data->data)*realsize+1);
+        data->data = malloc(sizeof(data->data) * realsize + 1);
+        memset(data->data, 0, sizeof(data->data) * realsize + 1);
         memmove(data->data, contents, realsize);
     }
     else{
@@ -109,7 +119,7 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     return realsize;
 }
 
-// TODO: memcached support
+// TODO: get ready fo rcaching, do not use them for now
 char *sia_get_from_cache(const char *src){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, src);

@@ -74,7 +74,6 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
-
         }
 
         payload = http_payload.data;
@@ -111,9 +110,11 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size
     strcat(final_url, "&uploadid=");
     strcat(final_url, uploadid);
     strcat(final_url, "&partnumber=");
-    char str_offset[6];
-    sprintf(str_offset, "%ld", size);
-    strcat(final_url, str_offset);
+    // TODO: offset is not the ultipart index, it needs to be calculated? MOD? DIV?   offset/size + 1
+    off_t slot = offset / 4096 + 1;
+    char str_slot[6];
+    sprintf(str_slot, "%ld", slot);
+    strcat(final_url, str_slot);
 
     if(opt->verbose){
         fprintf(stderr, "%s(\"%s\")\n", __func__, final_url);
@@ -155,6 +156,12 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size
         struct curl_header *header;
         CURLHcode h;
         h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
+        if (header->value[strlen(header->value) - 1] == '"'){
+            header->value[strlen(header->value) - 1] = '\0';
+        }
+        if (header->value[0] == '"'){
+            memmove(header->value, header->value + 1, strlen(header->value));
+        }
         if(opt->verbose){
             fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
             fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
@@ -163,6 +170,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size
             http_h_payload.data = malloc((sizeof(char) * strlen(header->value) + 1));
             strcpy(http_h_payload.data, header->value);
             http_h_payload.len = strlen(header->value);
+            payload = http_h_payload.data;
         }
         if (headers != NULL){
             curl_slist_free_all(headers);
@@ -174,7 +182,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *uploadid, size_t size
     free(final_url);
     final_url = NULL;
 
-    return (char *)http_h_payload.data;
+    return payload;
 }
 
 char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, void *ctx){
@@ -272,6 +280,7 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
                 }
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            payload = ctx;
             res = curl_easy_perform(curl);
             if (headers != NULL){
                 curl_slist_free_all(headers);
@@ -284,7 +293,7 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
         final_url = NULL;
 //    }
 
-    return (char *)ctx;
+    return payload;
 }
 
 #ifdef __cplusplus

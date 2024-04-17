@@ -20,7 +20,8 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
         fprintf(stderr, "%s(\"%s\")\n", __func__, final_url);
     }
 
-    void *payload = (void *)sia_get_from_cache(final_url);
+//    void *payload = (void *)sia_get_from_cache(final_url);
+    void *payload = NULL;
     sia_http_payload_t http_payload;
     http_payload.len = 0;
     http_payload.data = NULL;
@@ -38,18 +39,20 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
             curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
             curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
     //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            }
             struct curl_slist *headers = NULL;
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             res = curl_easy_perform(curl);
-
         }
 
         if(opt->verbose){
             fprintf(stderr, "%s:%d payload: %s\n", __FILE_NAME__, __LINE__, (char *)http_payload.data);
         }
-        sia_set_to_cache(final_url, http_payload.data);
+        // sia_set_to_cache(final_url, http_payload.data);
         payload = http_payload.data;
 
         curl_easy_cleanup(curl);
@@ -59,6 +62,7 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
 }
 
 unsigned short int sia_bus_consensus_state_synced(sia_cfg_t *opt){
+    unsigned short int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
@@ -80,15 +84,16 @@ unsigned short int sia_bus_consensus_state_synced(sia_cfg_t *opt){
                  if(opt->verbose){
                     fprintf(stderr, "%s:%d synced value: %u\n", __FILE_NAME__, __LINE__, cJSON_IsTrue(synced));
                  }
-                 return cJSON_IsTrue(synced);
+                 answer = cJSON_IsTrue(synced);
             }
+            cJSON_Delete(monitor_json);
         }
     }
-    return 0;
+    return answer;
 }
 
-
 unsigned int sia_bus_consensus_state_blockheight(sia_cfg_t *opt){
+    unsigned int answer = 0;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
@@ -109,14 +114,16 @@ unsigned int sia_bus_consensus_state_blockheight(sia_cfg_t *opt){
                  if(opt->verbose){
                     fprintf(stderr, "%s:%d blockheight value: %u\n", __FILE_NAME__, __LINE__, blockheight->valueint);
                  }
-                 return blockheight->valueint;
+                 answer =  blockheight->valueint;
             }
+            cJSON_Delete(monitor_json);
         }
     }
-    return 0;
+    return answer;
 }
 
 char *sia_bus_consensus_state_lastblocktime(sia_cfg_t *opt){
+    char *answer = NULL;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
     }
@@ -138,13 +145,14 @@ char *sia_bus_consensus_state_lastblocktime(sia_cfg_t *opt){
                  if(opt->verbose){
                     fprintf(stderr, "lastblocktime value: %s\n", lastblocktime->valuestring);
                  }
-                 return lastblocktime->valuestring;
+                 answer = malloc(sizeof(lastblocktime->valuestring) * strlen(lastblocktime->valuestring) + 1);
+                 strcpy(answer, lastblocktime->valuestring);
             }
         }
+        cJSON_Delete(monitor_json);
     }
-    return NULL;
+    return answer;
 }
-
 
 #ifdef __cplusplus
 }
