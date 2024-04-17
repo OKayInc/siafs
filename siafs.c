@@ -38,7 +38,7 @@ int siafs_getattr(const char *path, struct stat *stbuf){
         if(opt.verbose){
             fprintf(stderr, "%s:%d %s is a file\n", __FILE_NAME__, __LINE__, path);
         }
-        stbuf->st_mode = S_IFREG | 666;
+        stbuf->st_mode = S_IFREG | 0666;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = sia_bus_object_size(&opt, path);    // FIX this
         stbuf->st_mtime = time(NULL);   // Temporal
@@ -216,5 +216,42 @@ int siafs_release(const char *path, struct fuse_file_info *info){
             char *etag = sia_bus_multipart_complete_json(&opt, path, upload->uploadID);
         }
     }
+    return 0;
+}
+
+int siafs_open(const char *path, struct fuse_file_info *info){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, path, "(info)");
+    }
+    if (!sia_bus_objects_exists(&opt, path))
+		return -ENOENT;
+
+	if (sia_bus_objects_is_dir(&opt, path))
+		return -EISDIR;
+
+//	if ((info->flags & 3) != O_RDONLY)
+//		return -EACCES;
+    return 0;
+}
+
+int siafs_getxattr(const char *path, const char *key, char *val, size_t sz){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", \"%s\", %ld)\n", __FILE_NAME__, __LINE__, __func__, path, key, val, sz);
+    }
+    return -ENOTSUP;
+}
+
+int siafs_setxattr(const char *path, const char *key, const char *val, size_t sz, int flags){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", \"%s\", %ld, %d)\n", __FILE_NAME__, __LINE__, __func__, path, key, val, sz, flags);
+    }
+    return -ENOTSUP;
+}
+
+int siafs_unlink(const char *path){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
+    }
+    sia_bus_del_object(&opt, path);
     return 0;
 }

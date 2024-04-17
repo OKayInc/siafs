@@ -8,6 +8,8 @@ SIA FUSE Filesystem, sponsored by the SIA Foundation.
 * Reading files work.
 * Uploading small files (< 4kB).
 * Uploading big files (=> 4kB).
+* Deleting files.
+* Rewriting on pre-existing files.
 
 ## Installing
 siafs uses `CMake`.
@@ -36,9 +38,8 @@ If the bucket is omitted, it will use the default one.
 (not yet)
 
 ## TODO
-* Deleting files and directories.
+* Deleting directories.
 * Renaming files and directories.
-* Rewriting on pre-existing files.
 * Mount wrappers.
 * Caching.
 

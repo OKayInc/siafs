@@ -44,6 +44,10 @@ static struct fuse_operations operations = {
     .mknod      = siafs_mknod,
     .write      = siafs_write,
     .release    = siafs_release,
+    .open       = siafs_open,
+    .getxattr   = siafs_getxattr,
+    .setxattr   = siafs_setxattr,
+    .unlink     = siafs_unlink,
 };
 
 int parse_url(const char *url){

@@ -329,6 +329,71 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
     }
     return answer;
 }
+
+char *sia_bus_del_object(sia_cfg_t *opt, const char *path){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
+    }
+
+    char *final_url;
+    final_url = malloc( sizeof(opt->unauthenticated_url)*(strlen(opt->unauthenticated_url)+
+                        15+
+                        sizeof(path)*(strlen(path))+
+                        8+
+                        sizeof(opt->bucket)*(strlen(opt->bucket))+
+                        1));
+    strcpy(final_url, opt->unauthenticated_url);
+    strcat(final_url, "api/bus/objects");
+    strcat(final_url, path);
+    strcat(final_url, "?bucket=");
+    strcat(final_url, opt->bucket);
+
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, final_url);
+    }
+
+    //    void *payload = (void *)sia_get_from_cache(final_url);
+    void *payload = NULL;
+    sia_http_payload_t http_payload;
+    http_payload.len = 0;
+    http_payload.data = NULL;
+
+    if (payload == NULL){
+        CURL *curl;
+        CURLcode res;
+        curl = curl_easy_init();
+        if(curl) {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+            curl_easy_setopt(curl, CURLOPT_URL, final_url);
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+            curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, opt->scheme);
+            curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
+            curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
+//          curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            }
+            struct curl_slist *headers = NULL;
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
+            curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+            res = curl_easy_perform(curl);
+        }
+
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)http_payload.data);
+        }
+//        sia_set_to_cache(final_url, http_payload.data);
+        payload = http_payload.data;
+
+        curl_easy_cleanup(curl);
+        free(final_url);
+        final_url = NULL;
+    }
+
+    return payload;
+}
 #ifdef __cplusplus
 }
 #endif
