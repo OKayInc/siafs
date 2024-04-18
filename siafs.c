@@ -70,6 +70,9 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
         path2 = NULL;
         char ch = '/';
         path2 = malloc(sizeof(char) * strlen(path) + 1);
+        if (path2 == NULL){
+            return -ENOMEM;
+        }
         strcpy(path2, path);
         strncat(path2, &ch, 1);
     }
@@ -121,12 +124,23 @@ int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fu
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
-    size_t payload_size = size;
+    size_t payload_size = 0;
     off_t payload_offset = offset;
-    char *payload = sia_worker_get_object(&opt, path, payload_size, payload_offset);
-    memcpy(buf, payload + offset, size - offset);
+    char *payload = sia_worker_get_object(&opt, path, payload_size, payload_offset, &payload_size);
+    if (offset >= payload_size) {
+      return 0;
+    }
+
+    if (offset + size > payload_size) {
+        memcpy(buf, payload + offset, size - offset);   // TODO: other authors: payload_size - offset
+        free(payload);
+        return payload_size - payload_offset;
+    }
+
+    memcpy(buf, payload + offset, size);
     free(payload);
-    return payload_size - payload_offset;
+    return size;
+
 }
 
 int siafs_mkdir(const char *path, mode_t mode){
@@ -139,7 +153,9 @@ int siafs_mkdir(const char *path, mode_t mode){
         char *path3 = (char *)path;
         char ch = '/';
         path2 = malloc(sizeof(char) * strlen(path3) + 1);
-        strcpy(path2, path3);
+        if (path2 == NULL){
+            return -ENOMEM;
+        }        strcpy(path2, path3);
         strncat(path2, &ch, 1);
     }
 
@@ -174,9 +190,18 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
 
             if (offset == 0){
                 upload = malloc(sizeof(sia_upload_t));
+                if (upload == NULL){
+                    return -ENOMEM;
+                }
                 upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+                if (upload->name == NULL){
+                    return -ENOMEM;
+                }
                 strcpy(upload->name, path);
                 upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+                if (upload->uploadID == NULL){
+                    return -ENOMEM;
+                }
                 strcpy(upload->uploadID, upload_id);
                 for (int i = 0; i < SIA_MAX_PARTS; i++){
                     upload->part[i].etag = NULL;
@@ -283,6 +308,9 @@ int siafs_rename(const char *from, const char *to, unsigned int flags){
             // Add a / to the end
             char ch = '/';
             from2 = malloc(sizeof(char) * strlen(from) + 2);
+            if (from2 == NULL){
+                return -ENOMEM;
+            }
             strcpy(from2, from);
             strncat(from2, &ch, 1);
             free_from2 = 1;
@@ -292,16 +320,25 @@ int siafs_rename(const char *from, const char *to, unsigned int flags){
             // Add a / to the end
             char ch = '/';
             to2 = malloc(sizeof(char) * strlen(to) + 2);
+            if (to2 == NULL){
+                return -ENOMEM;
+            }
             strcpy(to2, to);
             strncat(to2, &ch, 1);
             free_to2 = 1;
         }
 
         mode = malloc(sizeof(char) * 6);
+        if (mode == NULL){
+            return -ENOMEM;
+        }
         strcpy(mode, "multi");
     }
     else{
         mode = malloc(sizeof(char) * 7);
+        if (mode == NULL){
+            return -ENOMEM;
+        }
         strcpy(mode, "single");
     }
     sia_bus_rename_object(&opt, from2, to2, mode);
@@ -315,3 +352,21 @@ int siafs_rename(const char *from, const char *to, unsigned int flags){
     return 0;
 }
 
+int sias_statfs(const char *path, struct statvfs *stbuf){
+    if(opt.verbose){
+        fprintf(stderr, "%s(\"%s\")\n", __func__, path);
+    }
+
+    stbuf->f_bsize = 1;     /* Optimal transfer block size */
+    stbuf->f_blocks = 1;    /* Total data blocks in filesystem */
+    stbuf->f_bfree = 1;     /* Free blocks in filesystem */
+    stbuf->f_bavail = 1;    /* Free blocks available to unprivileged user */
+    stbuf->f_files = 1;     /* Total inodes in filesystem */
+    stbuf->f_ffree = 1;     /* Free inodes in filesystem */
+    stbuf->f_namemax = 250;  /* maximum lenght of filenames */
+
+    unsigned long int used = sia_bus_used_storage_per_directory(&opt, "/");
+    stbuf->f_blocks = used * 1000000000000;
+    stbuf->f_bfree = stbuf->f_bavail = stbuf->f_blocks - used;
+    return 0;
+}

@@ -6,7 +6,7 @@ extern "C"
 #include "sia_worker_objects.h"
 extern sia_cfg_t opt;
 
-char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset){
+char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, size_t *payload_size){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu %ld)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset);
     }
@@ -74,6 +74,26 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
+            struct curl_header *header;
+            CURLHcode h;
+            h = curl_easy_header(curl, "Content-Length", 0, CURLH_HEADER, -1, &header);
+            if (header->value[strlen(header->value) - 1] == '"'){
+                header->value[strlen(header->value) - 1] = '\0';
+            }
+            if (header->value[0] == '"'){
+                memmove(header->value, header->value + 1, strlen(header->value));
+            }
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+            }
+            if (h == CURLHE_OK){
+                char *ptr;
+                *payload_size = strtol(header->value, &ptr, 10);
+            }
+            if (headers != NULL){
+                curl_slist_free_all(headers);
+            }
         }
 
         payload = http_payload.data;

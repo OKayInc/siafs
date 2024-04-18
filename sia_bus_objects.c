@@ -458,6 +458,46 @@ char *sia_bus_rename_object(sia_cfg_t *opt, const char *from, const char *to, co
     return payload;
 }
 
+unsigned long int sia_bus_used_storage_per_directory(sia_cfg_t *opt, const char *path){
+    unsigned long int answer = 0;
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
+    }
+    char *json_payload = sia_bus_objects_json(opt, path);
+    if (json_payload != NULL){
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
+        }
+        cJSON *monitor_json = cJSON_Parse(json_payload);
+        free(json_payload);
+        if (monitor_json == NULL){
+            const char *error_ptr = cJSON_GetErrorPtr();
+            fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
+        }
+        else{
+            cJSON *entry = NULL;
+            cJSON *entries = NULL;
+            entries = cJSON_GetObjectItemCaseSensitive(monitor_json, "entries");
+            cJSON_ArrayForEach(entry, entries){
+                if (cJSON_IsObject(entry)){
+                    cJSON *size = cJSON_GetObjectItemCaseSensitive(entry, "size");
+                    if (cJSON_IsNumber(size)){
+                        answer += size->valueint;
+                        if(opt->verbose){
+                            cJSON *name = cJSON_GetObjectItemCaseSensitive(entry, "name");
+                            fprintf(stderr, "%s:%d Found: %s [%ul]\n", __FILE_NAME__, __LINE__, name->valuestring, size->valueint);
+                        }
+
+                    }
+                }
+
+            }
+            cJSON_Delete(monitor_json);
+        }
+    }
+    return answer;
+}
+
 #ifdef __cplusplus
 }
 #endif

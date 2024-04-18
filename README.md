@@ -23,7 +23,7 @@ siafs uses `CMake`.
     cd siafs
     mkdir build
     cd buid
-    cmake ..
+    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Debug ..
     make
     make install
 

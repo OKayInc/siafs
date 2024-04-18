@@ -1,4 +1,3 @@
-#define FUSE_USE_VERSION 30
 #define __USE_GNU
 #define _XOPEN_SOURCE
 
@@ -50,6 +49,7 @@ static struct fuse_operations operations = {
     .unlink     = siafs_unlink,
     .rmdir      = siafs_rmdir,
     .rename     = siafs_rename,
+    .statfs     = sias_statfs,
 };
 
 int parse_url(const char *url){

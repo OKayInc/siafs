@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(siafs LANGUAGES C)
 
+# TODO: deine FUSE_USE_VERSION depending on the libfuse installed
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
 add_executable(siafs
@@ -39,7 +40,13 @@ target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
 
 pkg_check_modules(LIBFUSE REQUIRED IMPORTED_TARGET fuse)
 if(${LIBFUSE_FOUND})
-#    MESSAGE(${LIBFUSE_LIBRARIES})
+    #MESSAGE("VERSION: ${LIBFUSE_VERSION}")
+    #execute_process(COMMAND bash "-c" "fusermount --version | cut -d ' ' -f 3 | cut -d '.' -f 1,2 | sed s/'\\.'//g" OUTPUT_VARIABLE LIBFUSE_VERSION)
+    execute_process(COMMAND bash "-c" "echo ${LIBFUSE_VERSION}|cut -d '.' -f 1,2 |sed s/'\\.'//g" OUTPUT_VARIABLE LIBFUSE_VERSION2)
+    #MESSAGE("VERSION: ${LIBFUSE_VERSION2}")
+    #add_definitions(-DFUSE_USE_VERSION=${LIBFUSE_VERSION})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFUSE_USE_VERSION=${LIBFUSE_VERSION2}")
+
 endif()
 target_link_libraries(siafs PUBLIC ${LIBFUSE_LIBRARIES})
 
