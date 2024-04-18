@@ -15,6 +15,7 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path);
 unsigned long int sia_bus_object_size(sia_cfg_t *opt, const char *path);
 char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path);
 char *sia_bus_del_object(sia_cfg_t *opt, const char *path);
+char *sia_bus_rename_object(sia_cfg_t *opt, const char *from, const char *to, const char *mode);
 
 #ifdef __cplusplus
 }

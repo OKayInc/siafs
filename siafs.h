@@ -3,7 +3,6 @@
 
 #define __USE_GNU
 #define _XOPEN_SOURCE
-#define FUSE_USE_VERSION 30
 
 #include <errno.h>
 #include <fuse.h>
@@ -22,4 +21,10 @@ int siafs_open(const char *path, struct fuse_file_info *info);
 int siafs_getxattr(const char *path, const char *key, char *val, size_t sz);
 int siafs_setxattr(const char *path, const char *key, const char *val, size_t sz, int flags);
 int siafs_unlink(const char *path);
+int siafs_rmdir(const char *path);
+#if FUSE_USE_VERSION < 30
+int siafs_rename(const char *from, const char *to);
+#else
+int siafs_rename(const char *from, const char *to, unsigned int flags);
+#endif
 #endif

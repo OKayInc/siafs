@@ -255,3 +255,63 @@ int siafs_unlink(const char *path){
     sia_bus_del_object(&opt, path);
     return 0;
 }
+
+int siafs_rmdir(const char *path){
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
+    }
+    sia_bus_del_object(&opt, path);
+    return 0;
+}
+
+#if FUSE_USE_VERSION < 30
+int siafs_rename(const char *from, const char *to){
+    unsigned int flags = 0;
+#else
+int siafs_rename(const char *from, const char *to, unsigned int flags){
+#endif
+    char *from2 = (char *)from;
+    char *to2 = (char *)to;
+    char *mode = NULL;
+    unsigned short int free_from2 = 0;
+    unsigned short int free_to2 = 0;
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d %s(\"%s, %s, %u\")\n", __FILE_NAME__, __LINE__, __func__, from, to, flags);
+    }
+    if (sia_bus_objects_is_dir(&opt, from) == 1 ){
+        if (from[(strlen(from) - 1)] != '/'){
+            // Add a / to the end
+            char ch = '/';
+            from2 = malloc(sizeof(char) * strlen(from) + 2);
+            strcpy(from2, from);
+            strncat(from2, &ch, 1);
+            free_from2 = 1;
+        }
+
+        if (to[(strlen(to) - 1)] != '/'){
+            // Add a / to the end
+            char ch = '/';
+            to2 = malloc(sizeof(char) * strlen(to) + 2);
+            strcpy(to2, to);
+            strncat(to2, &ch, 1);
+            free_to2 = 1;
+        }
+
+        mode = malloc(sizeof(char) * 6);
+        strcpy(mode, "multi");
+    }
+    else{
+        mode = malloc(sizeof(char) * 7);
+        strcpy(mode, "single");
+    }
+    sia_bus_rename_object(&opt, from2, to2, mode);
+    free(mode);
+    if (free_from2 == 1){
+        free(from2);
+    }
+    if (free_to2 == 1){
+        free(to2);
+    }
+    return 0;
+}
+

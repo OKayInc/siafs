@@ -48,6 +48,8 @@ static struct fuse_operations operations = {
     .getxattr   = siafs_getxattr,
     .setxattr   = siafs_setxattr,
     .unlink     = siafs_unlink,
+    .rmdir      = siafs_rmdir,
+    .rename     = siafs_rename,
 };
 
 int parse_url(const char *url){

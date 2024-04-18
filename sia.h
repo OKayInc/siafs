@@ -5,7 +5,6 @@ extern "C"
 {
 #endif
 
-#define FUSE_USE_VERSION 30
 #include <fuse.h>
 
 #include "sia_common.h"
