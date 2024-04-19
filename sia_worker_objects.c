@@ -116,9 +116,26 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
     }
     char *final_url;
     //http://127.0.0.1:9980/api/worker/multipart/:key?bucket=mybucket&uploadid=0bdbea34e2be1b3de7c60766dc1a9f400e0cf6d2db8f5f3842720f8549559f29&partnumber=1"
+    // Encode the path
+    CURL *curl = curl_easy_init();
+    char *path2 = NULL;
+    if(curl) {
+        char *encoded_path = curl_easy_escape(curl, path, strlen(path));
+        if(encoded_path) {
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d Encoded path: %s\n", __FILE_NAME__, __LINE__, encoded_path);
+            }
+            path2 = malloc(sizeof(encoded_path) * strlen(encoded_path) + 1);
+            strcpy(path2, encoded_path);
+            curl_free(encoded_path);
+        }
+    curl_easy_cleanup(curl);
+    };
+
+    // path2 has the encoded file path
     final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
                         21+
-                        sizeof(path)*strlen(path)+
+                        sizeof(path2)*strlen(path2)+
                         8+
                         sizeof(opt->bucket)*strlen(opt->bucket)+
                         10+
@@ -127,7 +144,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
                         1);
     strcpy(final_url, opt->unauthenticated_url);
     strcat(final_url, "api/worker/multipart");
-    strcat(final_url, path); // Where is it
+    strcat(final_url, path2); // Where is it
     strcat(final_url, "?bucket=");
     strcat(final_url, opt->bucket);
     strcat(final_url, "&uploadid=");
@@ -148,7 +165,6 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
     http_h_payload.len = 0;
     http_h_payload.data = NULL;
 
-    CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
     if(curl) {
