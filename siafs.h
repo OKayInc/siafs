@@ -4,13 +4,15 @@
 #define __USE_GNU
 #define _XOPEN_SOURCE
 #include <errno.h>
+#if FUSE_USE_VERSION < 30
 #include <fuse.h>
+#else
+#include <fuse3/fuse.h>
+#endif
 #include "sia.h"
 
 char *sia_concensus_state(sia_cfg_t *opt);
 
-int siafs_getattr(const char *path, struct stat *stbuf);
-int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
 int siafs_mkdir(const char *path, mode_t mode);
 int siafs_mknod(const char *path, mode_t mode, dev_t rdev);
@@ -24,11 +26,18 @@ int siafs_rmdir(const char *path);
 
 #if FUSE_USE_VERSION < 30
 #warning FUSE_USE_VERSION < 30
+int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
+int siafs_getattr(const char *path, struct stat *stbuf);
 int siafs_rename(const char *from, const char *to);
+void *siafs_init(struct fuse_conn_info *conn);
 #else
 #warning FUSE_USE_VERSION >= 30
+int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags);
+int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
 int siafs_rename(const char *from, const char *to, unsigned int flags);
+void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg);
 #endif
 #endif
 
 int sias_statfs(const char *path, struct statvfs *stbuf);
+

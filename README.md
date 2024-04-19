@@ -30,15 +30,23 @@ siafs uses `CMake`.
 #### Requirements
 * libcjson
 * libcurl
-* libfuse 2.9+
+* libfuse 2.9+ (3 recommended)
+
+This project assumes libfuse2 is the default fuse version and libfuse3 is under fuse3/ directory. If your Linux distribution uses libfuse3 as the default one, edit the CMakeLists.txt file and the .h headers.
 
 ## How to Use It
 Just type:
 `siafs http://:yourpassword@yourIP:port/bucket mountpoint`
 If the bucket is omitted, it will use the default one.
 
+### Debug
+Type:
+`siafs -v -d http://:yourpassword@yourIP:port/bucket mountpoint`
+Daemon won't for and a lot of debug info will be displayed.
+
 ## Known Issues
-Extremelly slow for now. Needs caching and optimization review. The first release will focus on the logic only.
+* Extremelly slow for now. Needs caching and optimization review. The first release will focus on the logic only.
+* Performance issues when writting big files with libfuse 2.9.x due to lack of the big_write feature. This doesn't happen with libfuse 3+.
 
 ## TODO
 * Mount wrappers.

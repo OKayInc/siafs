@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
+#if FUSE_USE_VERSION < 30
 #include <fuse.h>
+#else
+#include <fuse3/fuse.h>
+#endif
 #include <curl/curl.h>
 
 #if !CURL_AT_LEAST_VERSION(7, 62, 0)
@@ -36,6 +40,7 @@ sia_cfg_t opt = {
 };
 
 static struct fuse_operations operations = {
+    .init       = siafs_init,
     .getattr	= siafs_getattr,
     .readdir	= siafs_readdir,
     .read       = siafs_read,
@@ -122,7 +127,7 @@ void usage(){
 }
 
 static int siafs_opt_proc(void *data, const char *arg, int key, struct fuse_args *outargs){
-    fprintf(stderr, "%s(\"data, %s, %d, outargs\")\n", __func__, arg, key);
+    fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %d, outargs\")\n", __FILE_NAME__, __LINE__, __func__, (char *)data, arg, key);
     char *str;
 
     if(key == FUSE_OPT_KEY_OPT){

@@ -2,8 +2,11 @@
 #include "sia.h"
 
 extern sia_cfg_t opt;
-
+#if FUSE_USE_VERSION < 30
 int siafs_getattr(const char *path, struct stat *stbuf){
+#else
+int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi){
+#endif
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
@@ -56,14 +59,22 @@ int siafs_getattr(const char *path, struct stat *stbuf){
     }
     return 0;
 }
-
+#if FUSE_USE_VERSION < 30
 int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
+
+#else
+int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags){
+#endif
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
+#if FUSE_USE_VERSION < 30
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
-
+#else
+    filler(buf, ".", NULL, 0, 0);
+    filler(buf, "..", NULL, 0, 0);
+#endif
     char *path2 = (char *)path;
     if (path[(strlen(path) - 1)] != '/'){
         // Add a / to the end
@@ -107,7 +118,12 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
                         if(opt.verbose){
                             fprintf(stderr, "%s:%d filename: %s\n", __FILE_NAME__, __LINE__, fn+sizeof(char));
                         }
+#if FUSE_USE_VERSION < 30
                         filler(buf, fn+sizeof(char), NULL, 0);
+#else
+                        filler(buf, fn+sizeof(char), NULL, 0, 0);
+#endif
+
                     }
                 }
             }
@@ -366,7 +382,15 @@ int sias_statfs(const char *path, struct statvfs *stbuf){
     stbuf->f_namemax = 250;  /* maximum lenght of filenames */
 
     unsigned long int used = sia_bus_used_storage_per_directory(&opt, "/");
-    stbuf->f_blocks = used * 1000000000000;
+    stbuf->f_blocks = sia_stats_totalStorage(&opt);// used * 1000000000000;
     stbuf->f_bfree = stbuf->f_bavail = stbuf->f_blocks - used;
     return 0;
+}
+#if FUSE_USE_VERSION < 30
+void *siafs_init(struct fuse_conn_info *conn){
+#else
+void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
+    cfg->auto_cache = 1;
+#endif
+   return NULL;
 }
