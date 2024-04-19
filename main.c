@@ -16,8 +16,6 @@
 #error "I require curl 7.62.0 or later"
 #endif
 
-#include "defaults.h"
-#include "structures.h"
 #include "siafs.h"
 #include "sia.h"
 
@@ -26,13 +24,13 @@
 /* default options */
 sia_cfg_t opt = {
     .url = NULL,
-    .scheme = SIAFS_DEFAULT_SCHEME,
-    .host = SIAFS_DEFAULT_HOST,
-    .user = SIAFS_DEFAUT_USER,
-    .password = SIAFS_DEFAULT_PASSWORD,
-    .port_s = SIAFS_DEFAULT_PORT_S,
-    .port = SIAFS_DEFAULT_PORT,
-    .bucket = SIAFS_DEFAULT_HOST,
+    .scheme = SIA_DEFAULT_SCHEME,
+    .host = SIA_DEFAULT_HOST,
+    .user = SIA_DEFAUT_USER,
+    .password = SIA_DEFAULT_PASSWORD,
+    .port_s = SIA_DEFAULT_PORT_S,
+    .port = SIA_DEFAULT_PORT,
+    .bucket = SIA_DEFAULT_HOST,
     .unauthenticated_url = NULL,
     .verbose = 0,
     .maxhandle = 10,
@@ -80,7 +78,7 @@ int parse_url(const char *url){
     uc = curl_url_get(h, CURLUPART_PATH, &opt.bucket, 0);
     
     if (!strcmp(opt.bucket, "/")){
-        strcpy(opt.bucket, SIAFS_DEFAULT_BUCKET);
+        strcpy(opt.bucket, SIA_DEFAULT_BUCKET);
     }
     
     opt.port = atol(opt.port_s);

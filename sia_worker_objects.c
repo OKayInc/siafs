@@ -112,7 +112,7 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
 
 char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *uploadid, size_t size, off_t offset, void *ctx){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, (char *)ctx);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, "(char *)ctx");
     }
     char *final_url;
     //http://127.0.0.1:9980/api/worker/multipart/:key?bucket=mybucket&uploadid=0bdbea34e2be1b3de7c60766dc1a9f400e0cf6d2db8f5f3842720f8549559f29&partnumber=1"

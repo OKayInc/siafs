@@ -6,8 +6,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
 add_executable(siafs
     main.c
-    defaults.h
-    structures.h
+    sia_defaults.h
     siafs.h
     siafs.c
     sia.h

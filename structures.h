@@ -1,4 +1,0 @@
-#ifndef SIAFS_STRUCTURES_H
-#define SIAFS_STRUCTURES_H
-
-#endif

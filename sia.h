@@ -4,7 +4,7 @@
 extern "C"
 {
 #endif
-
+#include "sia_defaults.h"
 #include "sia_common.h"
 #include "sia_bus_accounts.h"
 #include "sia_bus_consensus.h"
@@ -13,7 +13,6 @@ extern "C"
 #include "sia_stats.h"
 #include "sia_worker_objects.h"
 
-#include "structures.h"
 #include "urlcode.h"
 
 #ifdef __cplusplus
