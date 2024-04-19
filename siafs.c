@@ -194,7 +194,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %zu, %ld)\n", __FILE_NAME__, __LINE__, __func__, path, "(buf)", size, offset);
     }
-    if ((offset == 0) && (size < 4096)){
+    if ((offset == 0) && (size < SIAFS_SMALL_FILE_SIZE)){
         // Smaller files are sent through the simple API
         sia_worker_put_object(&opt, path, size, offset, (void *)buf);
     }

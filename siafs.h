@@ -28,6 +28,12 @@
 #include <sys/xattr.h>
 #endif
 
+#if FUSE_USE_VERSION < 30
+#define SIAFS_SMALL_FILE_SIZE   4096
+#else
+#define SIAFS_SMALL_FILE_SIZE   131072
+#endif
+
 #include "sia.h"
 
 char *sia_concensus_state(sia_cfg_t *opt);
