@@ -32,7 +32,7 @@ siafs uses `CMake`.
 * libcurl
 * libfuse 2.9+ (3 recommended)
 
-This project assumes libfuse2 is the default fuse version and libfuse3 is under fuse3/ directory. If your Linux distribution uses libfuse3 as the default one, edit the CMakeLists.txt file and the .h headers.
+This project looks for libfus3 first and it will fall back looking for libfuse2.
 
 ## How to Use It
 Just type:
@@ -42,7 +42,7 @@ If the bucket is omitted, it will use the default one.
 ### Debug
 Type:
 `siafs -v -d http://:yourpassword@yourIP:port/bucket mountpoint`
-Daemon won't for and a lot of debug info will be displayed.
+Daemon won't fork and a lot of debug info will be displayed.
 
 ## Known Issues
 * Extremelly slow for now. Needs caching and optimization review. The first release will focus on the logic only.

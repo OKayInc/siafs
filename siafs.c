@@ -275,6 +275,7 @@ int siafs_open(const char *path, struct fuse_file_info *info){
     return 0;
 }
 
+#ifdef HAVE_XATTR
 int siafs_getxattr(const char *path, const char *key, char *val, size_t sz){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", \"%s\", %ld)\n", __FILE_NAME__, __LINE__, __func__, path, key, val, sz);
@@ -288,6 +289,7 @@ int siafs_setxattr(const char *path, const char *key, const char *val, size_t sz
     }
     return -ENOTSUP;
 }
+#endif
 
 int siafs_unlink(const char *path){
     if(opt.verbose){

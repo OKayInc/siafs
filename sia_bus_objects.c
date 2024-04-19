@@ -180,8 +180,12 @@ unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
                         break;
                     }
                 }
+                cJSON_Delete(monitor_json);
             }
-            cJSON_Delete(monitor_json);
+            else{
+                const char *error_ptr = cJSON_GetErrorPtr();
+                fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
+            }
         }
     }
     return answer;

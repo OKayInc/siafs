@@ -14,7 +14,21 @@ extern "C"
 
 #define SIA_CACHE_TTL   5
 #define SIA_MAX_PARTS   10000
+// Caching structures
+typedef struct{
+    char *src;
+    char *payload;
+    time_t time;
+}sia_payload_t;
 
+typedef struct sia_metacache_s{
+    char *name;
+    unsigned long long int size;
+    time_t  modtime;
+    struct sia_metacache_s *next;
+} sia_metacache_t;
+
+// Multi-part upload structures
 typedef struct{
     char *etag;
 } sia_uploaded_part_t;
@@ -23,15 +37,10 @@ typedef struct sia_upload_s{
     sia_uploaded_part_t part[SIA_MAX_PARTS];
     char *name;
     char *uploadID;
-    struct  sia_upload_s *next;
+    struct sia_upload_s *next;
 } sia_upload_t;
 
-typedef struct{
-    char *src;
-    char *payload;
-    time_t time;
-}sia_payload_t;
-
+// HTTP Payload
 typedef struct{
     void *data;
     unsigned long int len;
@@ -50,6 +59,7 @@ typedef struct{
     short verbose;
     unsigned int maxhandle;
     sia_upload_t *uploads;
+    sia_metacache_t *metacache;
 }sia_cfg_t;
 
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);

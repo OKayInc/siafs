@@ -35,6 +35,7 @@ sia_cfg_t opt = {
     .verbose = 0,
     .maxhandle = 10,
     .uploads = NULL,
+    .metacache = NULL,
 };
 
 static struct fuse_operations operations = {
@@ -47,8 +48,10 @@ static struct fuse_operations operations = {
     .write      = siafs_write,
     .release    = siafs_release,
     .open       = siafs_open,
+#ifdef HAVE_XATTR
     .getxattr   = siafs_getxattr,
     .setxattr   = siafs_setxattr,
+#endif
     .unlink     = siafs_unlink,
     .rmdir      = siafs_rmdir,
     .rename     = siafs_rename,

@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(siafs LANGUAGES C)
+project(siafs
+    VERSION 0.0.1
+    DESCRIPTION "Access the SIA Storage within a mountpoint"
+    LANGUAGES C
+)
+
+INCLUDE(CheckIncludeFiles)
+
+IF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+ENDIF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
@@ -27,7 +37,26 @@ add_executable(siafs
     sia_worker_objects.c
     urlcode.c
     urlcode.h
-    )
+)
+
+option(WITH_XATTR "Enable support for extended attributes" ON)
+
+IF (WITH_XATTR)
+	CHECK_INCLUDE_FILES("sys/xattr.h" HAVE_LIBC_XATTR)
+	CHECK_INCLUDE_FILES("attr/xattr.h" HAVE_LIBATTR_XATTR)
+
+	IF (HAVE_LIBC_XATTR)
+		add_definitions(-DLIBC_XATTR)
+	ELSEIF(HAVE_LIBATTR_XATTR)
+		add_definitions(-DLIBATTR_XATTR)
+	ENDIF()
+
+	IF (NOT HAVE_LIBC_XATTR AND NOT HAVE_LIBATTR_XATTR)
+		add_definitions(-DDISABLE_XATTR)
+	ENDIF()
+ELSE (WITH_XATTR)
+	add_definitions(-DDISABLE_XATTR)
+ENDIF (WITH_XATTR)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBMEMCACHED REQUIRED IMPORTED_TARGET libmemcached)
@@ -38,12 +67,19 @@ if(${LIBMEMCACHED_FOUND})
 endif()
 target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
 
-pkg_check_modules(LIBFUSE REQUIRED IMPORTED_TARGET fuse3)
-if(${LIBFUSE_FOUND})
-    execute_process(COMMAND bash "-c" "echo -n ${LIBFUSE_VERSION}|cut -d '.' -f 1,2 |sed s/'\\.'//g|tr -d '\n'" OUTPUT_VARIABLE LIBFUSE_VERSION2)
+pkg_check_modules(LIBFUSE3 REQUIRED IMPORTED_TARGET fuse3)
+IF(${LIBFUSE3_FOUND})
+    execute_process(COMMAND bash "-c" "echo -n ${LIBFUSE3_VERSION}|cut -d '.' -f 1,2 |sed s/'\\.'//g|tr -d '\n'" OUTPUT_VARIABLE LIBFUSE_VERSION2)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFUSE_USE_VERSION=${LIBFUSE_VERSION2}")
-endif()
-target_link_libraries(siafs PUBLIC ${LIBFUSE_LIBRARIES})
+    target_link_libraries(siafs PUBLIC ${LIBFUSE3_LIBRARIES})
+ELSE(${LIBFUSE3_FOUND})
+        pkg_check_modules(LIBFUSE2 REQUIRED IMPORTED_TARGET fuse)
+        IF(${LIBFUSE2_FOUND})
+            execute_process(COMMAND bash "-c" "echo -n ${LIBFUSE2_VERSION}|cut -d '.' -f 1,2 |sed s/'\\.'//g|tr -d '\n'" OUTPUT_VARIABLE LIBFUSE_VERSION2)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFUSE_USE_VERSION=${LIBFUSE_VERSION2}")
+            target_link_libraries(siafs PUBLIC ${LIBFUSE2_LIBRARIES})
+        ENDIF(${LIBFUSE2_FOUND})
+ENDIF(${LIBFUSE3_FOUND})
 
 pkg_check_modules(LIBCURL REQUIRED IMPORTED_TARGET libcurl)
 target_link_libraries(siafs PUBLIC ${LIBCURL_LIBRARIES})
