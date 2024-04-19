@@ -12,21 +12,37 @@ extern "C"
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
+#define SIA_METACACHE_TTL   10
 #define SIA_CACHE_TTL   5
 #define SIA_MAX_PARTS   10000
-// Caching structures
+
+    // Caching structures
 typedef struct{
     char *src;
     char *payload;
     time_t time;
 }sia_payload_t;
 
+typedef enum file_type_e {
+  SIA_DIR,
+  SIA_FILE
+} type_t;
+
 typedef struct sia_metacache_s{
-    char *name;
-    unsigned long long int size;
-    time_t  modtime;
+    char *name;                     // the path
+    type_t type;                    // SIA_DIR or SIA_FILE
+    unsigned long long int size;    // Size, must be 0 for SIA_DIR
+    time_t modtime;
+    time_t expire;                  // Data valid until expire
     struct sia_metacache_s *next;
 } sia_metacache_t;
+
+typedef struct sia_cache_s{
+    int (*add)(const char *key, const void *payload, const unsigned long int sz);
+    int (*del)(const char *key);
+    int (*get)(const char *key, void *payload, unsigned long int *sz);
+    int (*purge)();
+} sia_cache_t;
 
 // Multi-part upload structures
 typedef struct{
@@ -60,6 +76,8 @@ typedef struct{
     unsigned int maxhandle;
     sia_upload_t *uploads;
     sia_metacache_t *metacache;
+    sia_cache_t *L1;
+    sia_cache_t *L2;
 }sia_cfg_t;
 
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);

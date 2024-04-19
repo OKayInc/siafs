@@ -36,6 +36,8 @@ sia_cfg_t opt = {
     .maxhandle = 10,
     .uploads = NULL,
     .metacache = NULL,
+    .L1 = NULL,
+    .L2 = NULL,
 };
 
 static struct fuse_operations operations = {
