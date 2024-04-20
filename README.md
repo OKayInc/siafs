@@ -8,8 +8,8 @@ The following has been tested:
 * Listing directories work.
 * Creating directories work.
 * Reading files work.
-* Uploading small files (< 4kB).
-* Uploading big files (=> 4kB).
+* Uploading small files (< 4kB or 128kb).
+* Uploading big files (=> 4kB or 128kb).
 * Deleting files and directories.
 * Rewriting on pre-existing files.
 * Renaming files and directories.
@@ -28,19 +28,27 @@ siafs uses `CMake`.
     make
     make install
 
+### From RPM (RedHat based Linux)
+(not yet)
+
 #### Requirements
+* A working renterd (you may use testnet for testing)
 * libcjson
 * libcurl
 * libfuse 2.9+ (3 recommended)
 
-This project looks for libfus3 first and it will fall back looking for libfuse2.
+This project looks for libfuse3 first and it will fall back looking for libfuse2.
 
 ## How to Use It
+### Command Line
 Just type:
 `siafs http://:yourpassword@yourIP:port/bucket mountpoint`
 If the bucket is omitted, it will use the default one.
 
-### Debug
+### FSTAB
+(not yet)
+
+### How to Debug
 Type:
 `siafs -v -d http://:yourpassword@yourIP:port/bucket mountpoint`
 Daemon won't fork and a lot of debug info will be displayed.
@@ -57,6 +65,7 @@ Daemon won't fork and a lot of debug info will be displayed.
 The following limitations are due the SIA RenterD api.
 * No extended attributes.
 * No partial writting operations.
+* Filesize limitation due to a combination of Renterd multipart limitation (10,000 parts) and a libfuse fixed bufer size (4kb for libfuse2, 128kb for libfuse3). For libfuse 3, maximum filesize is 1.2GB; for libfuse 2, maximum filesize is 40MB.
 
 ## More Information
 (not yet)
