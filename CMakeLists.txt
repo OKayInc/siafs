@@ -67,7 +67,7 @@ if(${LIBMEMCACHED_FOUND})
 endif()
 target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
 
-pkg_check_modules(LIBFUSE3 REQUIRED IMPORTED_TARGET fuse3)
+pkg_check_modules(LIBFUSE3 IMPORTED_TARGET fuse3)
 IF(${LIBFUSE3_FOUND})
     execute_process(COMMAND bash "-c" "echo -n ${LIBFUSE3_VERSION}|cut -d '.' -f 1,2 |sed s/'\\.'//g|tr -d '\n'" OUTPUT_VARIABLE LIBFUSE_VERSION2)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFUSE_USE_VERSION=${LIBFUSE_VERSION2}")

@@ -82,6 +82,10 @@ typedef struct{
     sia_cache_t *L2;
 }sia_cfg_t;
 
+sia_metacache_t *append_meta(sia_cfg_t *opt, sia_metacache_t *meta);
+sia_metacache_t *del_meta(sia_cfg_t *opt, sia_metacache_t *meta);
+sia_metacache_t *find_meta_by_path(sia_cfg_t *opt, const char *path);
+
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path);

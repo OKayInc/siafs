@@ -243,10 +243,25 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
 
 unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
     unsigned short int answer = 0;
+    sia_metacache_t *meta = NULL;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
 
+    meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL) + SIA_METACACHE_TTL)){
+            // Evaluate
+            if (meta->type == SIA_FILE){
+                answer = 1;
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
         if(opt->verbose){
@@ -262,7 +277,7 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
             cJSON *object = NULL;
             object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
             if (object){
-                answer =  cJSON_IsObject(object);
+                answer = cJSON_IsObject(object);
             }
             cJSON_Delete(monitor_json);
         }

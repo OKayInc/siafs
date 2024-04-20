@@ -12,6 +12,71 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
+sia_metacache_t *append_meta(sia_cfg_t *opt, sia_metacache_t *meta){
+    sia_metacache_t *current = NULL;
+    if (meta != NULL){
+        if (opt->metacache != NULL){
+            current = opt->metacache;
+            while (current->next != NULL){
+                current = current->next;
+            }
+            current->next = meta;
+            current->next->next = NULL; // Safety
+        }
+        else{
+            opt->metacache = meta;
+            opt->metacache->next = NULL; // Safety
+            current = opt->metacache;
+        }
+    }
+    return current;
+}
+
+sia_metacache_t *del_meta(sia_cfg_t *opt, sia_metacache_t *meta){
+    sia_metacache_t *current = opt->metacache;
+    sia_metacache_t *before = NULL;
+
+    if (meta != NULL){
+        free(meta->name);
+        meta->name = NULL;
+
+        if (meta == current){
+            // Delete first node
+            opt->metacache = meta->next;
+            free(meta);
+        }
+        else{
+            // Find one node before;
+            before = current;
+            while ((before->next != meta) && before->next){
+                before = before->next;
+            }
+
+            if (before->next == meta){
+                before->next = meta->next;
+                free(meta);
+            }
+        }
+    }
+    return opt->metacache;
+}
+
+sia_metacache_t *find_meta_by_path(sia_cfg_t *opt, const char *path){
+    sia_metacache_t *current = opt->metacache;
+    if ((path != NULL) && (current != NULL)){
+        while (strcmp(current->name, path) && current->next){
+            current = current->next;
+        }
+
+        if (strcmp(current->name, path))
+            current = NULL;
+    }
+    else{
+        current = NULL;
+    }
+    return current;
+}
+
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload){
     sia_upload_t *current = NULL;
     if (upload != NULL){
