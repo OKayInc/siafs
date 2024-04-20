@@ -291,7 +291,21 @@ int siafs_rmdir(const char *path){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
     }
-    sia_bus_del_object(&opt, path);
+    char *path2 = NULL;
+    if (path[(strlen(path) - 1)] != '/'){
+        // Add a / to the end
+        char ch = '/';
+        path2 = malloc(sizeof(char) * strlen(path) + 2);
+        strcpy(path2, path);
+        strncat(path2, &ch, 1);
+    }
+    else{
+        path2 = malloc(sizeof(char) * strlen(path) + 1);
+        strcpy(path2, path);
+    }
+    sia_bus_del_object(&opt, path2);
+    if (path2 != NULL)
+        free(path2);
     return 0;
 }
 
