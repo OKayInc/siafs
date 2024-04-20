@@ -87,6 +87,5 @@ target_link_libraries(siafs PUBLIC ${LIBCURL_LIBRARIES})
 pkg_check_modules(LIBCJSON REQUIRED IMPORTED_TARGET libcjson)
 target_link_libraries(siafs PUBLIC ${LIBCJSON_LIBRARIES})
 
-#install(FILES mount.memcachedfs DESTINATION sbin)
-
+install(FILES mount.siafs DESTINATION sbin)
 install(TARGETS siafs RUNTIME DESTINATION bin)

@@ -13,6 +13,7 @@ The following has been tested:
 * Deleting files and directories.
 * Rewriting on pre-existing files.
 * Renaming files and directories.
+* Mount wrappers.
 
 ## Installing
 siafs uses `CMake`.
@@ -49,7 +50,6 @@ Daemon won't fork and a lot of debug info will be displayed.
 * Performance issues when writting big files with libfuse 2.9.x due to lack of the big_write feature. This doesn't happen with libfuse 3+.
 
 ## TODO
-* Mount wrappers.
 * Caching.
 * Test under diferent conditions.
 

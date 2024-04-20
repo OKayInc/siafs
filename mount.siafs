@@ -1,0 +1,52 @@
+#!/bin/bash
+# wrapper for mount.siafs to conform with common mount syntax
+# with this wrapper siafs can be used in fstab
+
+# location of the original mount.siafs
+origfs="/usr/bin/siafs"
+
+# gather inputs
+while [ $# -gt 0 ]; do
+        if [[ "$1" == -* ]]; then
+                # var is an input switch
+                # we can only use the -o or -F switches
+                if [[ "$1" == *F* ]]; then
+                        optsF="-F"
+                else
+                        optsF=""
+                fi
+                if [[ "$1" == *o* ]]; then
+                        shift
+                        if [[ "$1" == *uid=* ]]; then
+                                runas=$(getent passwd $(echo "$1" | sed -E -e 's/^.*uid=([^,]+)(,.*)?$/\1/') | cut -d: -f1)
+                        fi
+                        optsfuse="-- -o $1"
+                else
+                        optsfuse=""
+                fi
+                shift
+        else
+                # var is a main argument
+                sourcedir="$1"
+                shift
+                if [[ "$1" != -* ]]; then
+                        targetdir="$1"
+                        shift
+                else
+                        targetdir="$sourcedir"
+                fi
+        fi
+done
+
+# verify inputs
+if [ "$sourcedir" == "" ]; then
+        echo "no source specified"
+        exit 1
+fi
+if [ "$targetdir" == "" ]; then
+        echo "no target specified"
+        exit 1
+fi
+
+#echo "origfs" $optsF "$sourcedir" "$targetdir" $optsfuse
+"origfs" "$sourcedir" "$targetdir"
