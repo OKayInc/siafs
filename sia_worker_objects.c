@@ -8,7 +8,7 @@ extern sia_cfg_t opt;
 
 char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, size_t *payload_size){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu %ld)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, %lu)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, *payload_size);
     }
 
     CURL *curl = curl_easy_init();
@@ -32,8 +32,11 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     char *final_url;
     //http://127.0.0.1:9980/api/worker/objects/test with paces.pdf?bucket=default
     final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
-                        sizeof(path2)*strlen(path2)+7+
-                        sizeof(opt->bucket)*strlen(opt->bucket)+1);
+                        18+
+                        sizeof(path2)*strlen(path2)+
+                        8+
+                        sizeof(opt->bucket)*strlen(opt->bucket)+
+                        1);
     strcpy(final_url, opt->unauthenticated_url);
     strcat(final_url, "api/worker/objects");
     strcat(final_url, path2);
@@ -61,15 +64,18 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, opt->scheme);
             curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
             curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
-    //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-            if (offset > 0){
-                char str[256];
-                size_t offset2 = offset + size;                   // TODO: review
-                sprintf(str, "%ld%s%ld", offset, "-", offset2);
-                curl_easy_setopt(curl, CURLOPT_RANGE, str);
+            curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
             }
-            struct curl_slist *headers = NULL;
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//            if (offset > 0){
+                char str[256];
+                sprintf(str, "%ld%s%ld", offset, "-", (offset+size-1));
+                curl_easy_setopt(curl, CURLOPT_RANGE, str);
+//            }
+//            struct curl_slist *headers = NULL;
+//            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
@@ -91,14 +97,14 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
                 char *ptr;
                 *payload_size = strtol(header->value, &ptr, 10);
             }
-            if (headers != NULL){
-                curl_slist_free_all(headers);
-            }
+//            if (headers != NULL){
+//                curl_slist_free_all(headers);
+//            }
         }
 
         payload = http_payload.data;
         if(opt->verbose){
-            fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)payload);
+            fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, "(char *)payload");
         }
         //sia_set_to_cache(final_url, http_payload.data);
 
@@ -110,9 +116,9 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     return (char *)payload;
 }
 
-char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *uploadid, size_t size, off_t offset, void *ctx){
+char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *uploadid, size_t size, off_t offset, void *ctx, off_t slot){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, "(char *)ctx");
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, \"%s\", %lu)\n", __FILE_NAME__, __LINE__, __func__, opt->url, uploadid, size, offset, "(char *)ctx", slot);
     }
     char *final_url;
     //http://127.0.0.1:9980/api/worker/multipart/:key?bucket=mybucket&uploadid=0bdbea34e2be1b3de7c60766dc1a9f400e0cf6d2db8f5f3842720f8549559f29&partnumber=1"
@@ -150,8 +156,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
     strcat(final_url, "&uploadid=");
     strcat(final_url, uploadid);
     strcat(final_url, "&partnumber=");
-    // TODO: offset is not the ultipart index, it needs to be calculated? MOD? DIV?   offset/size + 1
-    off_t slot = offset / 4096 + 1;
+
     char str_slot[6];
     sprintf(str_slot, "%ld", slot);
     strcat(final_url, str_slot);
@@ -189,6 +194,7 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
             headers = curl_slist_append(headers, cl);
             headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, size);
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         res = curl_easy_perform(curl);
@@ -300,6 +306,8 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
 
 //                curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
                 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, size);
+
 //                curl_easy_setopt(curl, CURLOPT_READFUNCTION, send_payload);
 //                http_payload.data = ctx;
 //                http_payload.len = size;

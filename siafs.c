@@ -44,6 +44,9 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         stbuf->st_mode = S_IFREG | 0666;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = sia_bus_object_size(&opt, path);    // FIX this
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d file size: %ld\n", __FILE_NAME__, __LINE__, stbuf->st_size);
+        }
         stbuf->st_mtime = time(NULL);   // Temporal
     }
     else if (sia_bus_objects_is_dir(&opt, path) == 1 ){
@@ -138,25 +141,38 @@ int siafs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
 
 int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
     if(opt.verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %lu)\n", __FILE_NAME__, __LINE__, __func__, path, "(buf)", size, offset);
     }
     size_t payload_size = 0;
-    off_t payload_offset = offset;
-    char *payload = sia_worker_get_object(&opt, path, payload_size, payload_offset, &payload_size);
+    char *payload = sia_worker_get_object(&opt, path, size, offset, &payload_size);
+
+    size = payload_size;
+/**
     if (offset >= payload_size) {
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d Returning %lu)\n", __FILE_NAME__, __LINE__, 0LU);
+        }
       return 0;
     }
 
     if (offset + size > payload_size) {
         memcpy(buf, payload + offset, size - offset);   // TODO: other authors: payload_size - offset
         free(payload);
-        return payload_size - payload_offset;
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d Payload Size %lu)\n", __FILE_NAME__, __LINE__, payload_size);
+            fprintf(stderr, "%s:%d Returning %lu)\n", __FILE_NAME__, __LINE__, payload_size - offset);
+        }
+        return payload_size - offset;
     }
 
-    memcpy(buf, payload + offset, size);
+**/
+    memcpy(buf, payload, size);
+    if(opt.verbose){
+//        fprintf(stderr, "%s:%d Payload [%s])\n", __FILE_NAME__, __LINE__, payload);
+        fprintf(stderr, "%s:%d Returning %lu)\n", __FILE_NAME__, __LINE__, size);
+    }
     free(payload);
     return size;
-
 }
 
 int siafs_mkdir(const char *path, mode_t mode){
@@ -200,7 +216,9 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     }
     else{
         char *upload_id = sia_bus_get_uploadid(&opt, path);
-        char *etag = sia_worker_put_multipart(&opt, path, upload_id, size, offset, (void *)buf);
+        off_t slot = offset / SIAFS_SMALL_FILE_SIZE + 1;
+
+        char *etag = sia_worker_put_multipart(&opt, path, upload_id, size, offset, (void *)buf, slot);
         if (etag != NULL){
             sia_upload_t *upload;
 
@@ -227,7 +245,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
             else{
                 upload = find_upload_by_path(&opt, path);
             }
-            off_t slot = offset / 4096;
+            off_t slot = offset / SIAFS_SMALL_FILE_SIZE;
             upload->part[slot].etag = etag;
             if(opt.verbose){
                 fprintf(stderr, "%s:%d Upload Name: %s uploadID: %s\n", __FILE_NAME__, __LINE__, upload->name, upload->uploadID);

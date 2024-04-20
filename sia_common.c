@@ -102,6 +102,21 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
         fprintf(stderr, "%s:%d %s(\"%s\", %lu, %lu, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, "(char *)contents", sz, nmemb, "(char *)ctx");
     }
     sia_http_payload_t *data = (sia_http_payload_t *)ctx;
+    char *ptr;
+    if (data->data == NULL){
+        ptr = malloc(data->len + realsize + 1);
+        memset(ptr, 0, data->len + realsize + 1);
+    }
+    else{
+        ptr = realloc(data->data, data->len + realsize + 1);
+    }
+    if(!ptr)
+        return 0;
+    data->data = ptr;
+    memcpy(&(data->data[data->len]), contents, realsize);
+    data->len += realsize;
+    data->data[data->len] = 0;
+/*
     if (data->len == 0){
         data->len = realsize;
         data->data = malloc(sizeof(data->data) * realsize + 1);
@@ -112,11 +127,16 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
         unsigned long int oldlen = data->len;
         data->len += realsize;
         data->data = realloc(data->data, data->len + realsize + 1);
-        memcpy(data->data + oldlen, contents, realsize);
+        memcpy(&(data->data[oldlen]), contents, realsize);
     }
 
     ctx = &data;
-    return realsize;
+*/
+
+  if(opt.verbose){
+        fprintf(stderr, "%s:%d Data Len: %lu\n", __FILE_NAME__, __LINE__, data->len);
+    }
+  return realsize;
 }
 
 // TODO: get ready fo rcaching, do not use them for now

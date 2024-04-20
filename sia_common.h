@@ -58,7 +58,7 @@ typedef struct sia_upload_s{
 
 // HTTP Payload
 typedef struct{
-    void *data;
+    char *data;
     unsigned long int len;
 }sia_http_payload_t;
 
