@@ -28,14 +28,15 @@ siafs uses `CMake`.
     make
     make install
 
-### From RPM (RedHat based Linux)
-(not yet)
-
 #### Requirements
 * A working renterd (you may use testnet for testing)
 * libcjson
 * libcurl
 * libfuse 2.9+ (3 recommended)
+
+### From RPM (RedHat based Linux)
+(not yet)
+
 
 This project looks for libfuse3 first and it will fall back looking for libfuse2.
 
