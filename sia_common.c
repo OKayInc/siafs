@@ -116,22 +116,6 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     memcpy(&(data->data[data->len]), contents, realsize);
     data->len += realsize;
     data->data[data->len] = 0;
-/*
-    if (data->len == 0){
-        data->len = realsize;
-        data->data = malloc(sizeof(data->data) * realsize + 1);
-        memset(data->data, 0, sizeof(data->data) * realsize + 1);
-        memmove(data->data, contents, realsize);
-    }
-    else{
-        unsigned long int oldlen = data->len;
-        data->len += realsize;
-        data->data = realloc(data->data, data->len + realsize + 1);
-        memcpy(&(data->data[oldlen]), contents, realsize);
-    }
-
-    ctx = &data;
-*/
 
   if(opt.verbose){
         fprintf(stderr, "%s:%d Data Len: %lu\n", __FILE_NAME__, __LINE__, data->len);
@@ -139,7 +123,7 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
   return realsize;
 }
 
-// TODO: get ready fo rcaching, do not use them for now
+// TODO: get ready for caching, do not use them for now
 char *sia_get_from_cache(const char *src){
     if(opt.verbose){
         fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, src);

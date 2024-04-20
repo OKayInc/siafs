@@ -21,7 +21,7 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
             fprintf(stderr, "%s:%d / directory\n", __FILE_NAME__, __LINE__);
         }
         stbuf->st_ino = 1;
-        stbuf->st_mode = S_IFDIR | 0777;
+        stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
         stbuf->st_mtime = time(NULL);   // If / sends todays mod time, SIA doesn't return information for /
     }
@@ -29,9 +29,10 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         if(opt.verbose){
             fprintf(stderr, "%s:%d %s is a file\n", __FILE_NAME__, __LINE__, path);
         }
-        stbuf->st_mode = S_IFREG | 0666;
+        stbuf->st_mode = S_IFREG | 0644;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = sia_bus_object_size(&opt, path);    // FIX this
+        stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
         if(opt.verbose){
             fprintf(stderr, "%s:%d file size: %ld\n", __FILE_NAME__, __LINE__, stbuf->st_size);
         }
@@ -40,30 +41,12 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         if(opt.verbose){
             fprintf(stderr, "%s:%d %s is a directory\n", __FILE_NAME__, __LINE__, path);
         }
-        stbuf->st_mode = S_IFDIR | 0777;
+        stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
+        stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
     }
     else{
         return -ENOENT;
-    }
-
-    if(strcmp(path, "/")){
-        char timestamp[32] = {0};
-        char *time_payload = sia_bus_objects_modtime(&opt, path);
-        strcpy(timestamp, sia_bus_objects_modtime(&opt, path));
-        free(time_payload);
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d Mod time: %s\n", __FILE_NAME__, __LINE__, timestamp);
-        }
-        struct tm tm;
-        memset(&tm, 0, sizeof(struct tm));
-        // 2024-04-20T03:34:36.367719838Z
-        if (strptime(timestamp, "%Y-%m-%dT%H:%M:%S%Z", &tm) != NULL ){
-            stbuf->st_mtime = mktime(&tm);
-            if(opt.verbose){
-                fprintf(stderr, "%s:%d mtime: %lu\n", __FILE_NAME__, __LINE__, stbuf->st_mtime);
-            }
-        }
     }
     return 0;
 }

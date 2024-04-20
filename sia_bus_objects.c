@@ -303,11 +303,32 @@ unsigned long int sia_bus_object_size(sia_cfg_t *opt, const char *path){
 
 char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
     char *answer = NULL;
+    sia_object_type_t type = SIA_UNKOWN;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
 
-    char *json_payload = sia_bus_objects_json(opt, path);
+    char *json_payload = NULL;
+    char *path2 = NULL;
+    if (sia_bus_objects_is_file(opt, path) == 1 ){
+        type = SIA_FILE;
+        json_payload = sia_bus_objects_json(opt, path);
+    }
+    else if (sia_bus_objects_is_dir(opt, path) == 1 ){
+        type = SIA_DIR;
+        if (path[(strlen(path) - 1)] != '/'){
+            // Add a / to the end
+            char ch = '/';
+            path2 = malloc(sizeof(char) * strlen(path) + 2);
+            strcpy(path2, path);
+            strncat(path2, &ch, 1);
+        }
+        else{
+            path2 = malloc(sizeof(char) * strlen(path) + 1);
+            strcpy(path2, path);
+        }
+        json_payload = sia_bus_objects_list_json(opt, path2);
+    }
     if (json_payload != NULL){
         if(opt->verbose){
             fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
@@ -315,25 +336,71 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
         cJSON *monitor_json = cJSON_Parse(json_payload);
         free(json_payload);
         if (monitor_json == NULL){
-            const char *error_ptr = cJSON_GetErrorPtr();
-            fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
+                const char *error_ptr = cJSON_GetErrorPtr();
+                fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
         }
         else{
-            cJSON *object = NULL;
-            object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
-            if (object){
-                cJSON *modtime = cJSON_GetObjectItemCaseSensitive(object, "modTime");
-                if (cJSON_IsString(modtime)){
-                    answer = malloc(sizeof(modtime->valuestring) * strlen(modtime->valuestring) + 1);
-                    strcpy(answer, modtime->valuestring);
+            if (type == SIA_FILE){
+                cJSON *object = NULL;
+                object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
+                if (object){
+                    cJSON *modtime = cJSON_GetObjectItemCaseSensitive(object, "modTime");
+                    if (cJSON_IsString(modtime)){
+                        answer = malloc(sizeof(modtime->valuestring) * strlen(modtime->valuestring) + 1);
+                        strcpy(answer, modtime->valuestring);
+                    }
                 }
+            }
+            else if (type == SIA_DIR){
+                cJSON *objects = NULL;
+                cJSON *object = NULL;
+                objects = cJSON_GetObjectItemCaseSensitive(monitor_json, "objects");
+                if (objects){
+                    cJSON_ArrayForEach(object, objects){
+                        cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
+                        cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
+                        if (!strcmp(name->valuestring, path2) && (size->valueint == 0)){
+                            // Directory found
+                            cJSON *modtime = cJSON_GetObjectItemCaseSensitive(object, "modTime");
+                            if (cJSON_IsString(modtime)){
+                                answer = malloc(sizeof(modtime->valuestring) * strlen(modtime->valuestring) + 1);
+                                strcpy(answer, modtime->valuestring);
+                            }
+                        }
+                    }
+                }
+
             }
             cJSON_Delete(monitor_json);
         }
     }
+
+    if (path2 != NULL)
+        free(path2);
+
     return answer;
 }
 
+time_t sia_bus_objects_unixtime(sia_cfg_t *opt, const char *path){
+    time_t answer = 0;
+    char timestamp[32] = {0};
+    char *time_payload = sia_bus_objects_modtime(opt, path);
+    strcpy(timestamp, sia_bus_objects_modtime(opt, path));
+    free(time_payload);
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d Mod time: %s\n", __FILE_NAME__, __LINE__, timestamp);
+    }
+    struct tm tm;
+    memset(&tm, 0, sizeof(struct tm));
+    // 2024-04-20T03:34:36.367719838Z
+    if (strptime(timestamp, "%Y-%m-%dT%H:%M:%S%Z", &tm) != NULL ){
+        answer = mktime(&tm);
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d mtime: %lu\n", __FILE_NAME__, __LINE__, answer);
+        }
+    }
+    return answer;
+}
 char *sia_bus_del_object(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);

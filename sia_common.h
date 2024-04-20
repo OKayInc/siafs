@@ -5,6 +5,7 @@ extern "C"
 {
 #endif
 
+#define _XOPEN_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,13 +25,14 @@ typedef struct{
 }sia_payload_t;
 
 typedef enum file_type_e {
-  SIA_DIR,
-  SIA_FILE
-} type_t;
+    SIA_UNKOWN,
+    SIA_DIR,
+    SIA_FILE
+} sia_object_type_t;
 
 typedef struct sia_metacache_s{
     char *name;                     // the path
-    type_t type;                    // SIA_DIR or SIA_FILE
+    sia_object_type_t type;                    // SIA_DIR or SIA_FILE
     unsigned long long int size;    // Size, must be 0 for SIA_DIR
     time_t modtime;
     time_t expire;                  // Data valid until expire
