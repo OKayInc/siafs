@@ -15,19 +15,7 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
     stbuf->st_uid = fuse_get_context()->uid;
     stbuf->st_gid = fuse_get_context()->gid;
     stbuf->st_atime = time(NULL);
-/**
-    char timestamp[32] = {0};
-    strcpy(timestamp, sia_bus_objects_modtime(&opt, path));  TODO: Review this
-    struct tm tm;
-    memset(&tm, 0, sizeof(struct tm));
-    if (strptime(timestamp, "%Y-%m-%dT%H:%M:%S", &tm) != NULL ){
-        stbuf->st_mtime = mktime(&tm);
-    }
-    else{
-        stbuf->st_mtime = time(NULL);
-    }
-**/
-    
+
     if(!strcmp(path, "/")){
         if(opt.verbose){
             fprintf(stderr, "%s:%d / directory\n", __FILE_NAME__, __LINE__);
@@ -47,7 +35,6 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         if(opt.verbose){
             fprintf(stderr, "%s:%d file size: %ld\n", __FILE_NAME__, __LINE__, stbuf->st_size);
         }
-        stbuf->st_mtime = time(NULL);   // Temporal
     }
     else if (sia_bus_objects_is_dir(&opt, path) == 1 ){
         if(opt.verbose){
@@ -55,10 +42,28 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         }
         stbuf->st_mode = S_IFDIR | 0777;
         stbuf->st_nlink = 2;
-        stbuf->st_mtime = time(NULL);   // Temporal
     }
     else{
         return -ENOENT;
+    }
+
+    if(strcmp(path, "/")){
+        char timestamp[32] = {0};
+        char *time_payload = sia_bus_objects_modtime(&opt, path);
+        strcpy(timestamp, sia_bus_objects_modtime(&opt, path));
+        free(time_payload);
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d Mod time: %s\n", __FILE_NAME__, __LINE__, timestamp);
+        }
+        struct tm tm;
+        memset(&tm, 0, sizeof(struct tm));
+        // 2024-04-20T03:34:36.367719838Z
+        if (strptime(timestamp, "%Y-%m-%dT%H:%M:%S%Z", &tm) != NULL ){
+            stbuf->st_mtime = mktime(&tm);
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d mtime: %lu\n", __FILE_NAME__, __LINE__, stbuf->st_mtime);
+            }
+        }
     }
     return 0;
 }
@@ -147,25 +152,7 @@ int siafs_read(const char *path, char *buf, size_t size, off_t offset, struct fu
     char *payload = sia_worker_get_object(&opt, path, size, offset, &payload_size);
 
     size = payload_size;
-/**
-    if (offset >= payload_size) {
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d Returning %lu)\n", __FILE_NAME__, __LINE__, 0LU);
-        }
-      return 0;
-    }
 
-    if (offset + size > payload_size) {
-        memcpy(buf, payload + offset, size - offset);   // TODO: other authors: payload_size - offset
-        free(payload);
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d Payload Size %lu)\n", __FILE_NAME__, __LINE__, payload_size);
-            fprintf(stderr, "%s:%d Returning %lu)\n", __FILE_NAME__, __LINE__, payload_size - offset);
-        }
-        return payload_size - offset;
-    }
-
-**/
     memcpy(buf, payload, size);
     if(opt.verbose){
 //        fprintf(stderr, "%s:%d Payload [%s])\n", __FILE_NAME__, __LINE__, payload);
