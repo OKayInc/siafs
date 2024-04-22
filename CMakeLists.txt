@@ -16,6 +16,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
 add_executable(siafs
     main.c
+    memcached_cache.h
+    memcached_cache.c
     sia_defaults.h
     siafs.h
     siafs.c
@@ -35,8 +37,6 @@ add_executable(siafs
     sia_stats.c
     sia_worker_objects.h
     sia_worker_objects.c
-    urlcode.c
-    urlcode.h
 )
 
 option(WITH_XATTR "Enable support for extended attributes" ON)
@@ -58,14 +58,18 @@ ELSE (WITH_XATTR)
 	add_definitions(-DDISABLE_XATTR)
 ENDIF (WITH_XATTR)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBMEMCACHED REQUIRED IMPORTED_TARGET libmemcached)
-if(${LIBMEMCACHED_FOUND})
-#    MESSAGE(${PKG_CONFIG_EXECUTABLE})
-#    MESSAGE(${LIBMEMCACHED_LIBRARIES})
-#    MESSAGE(${LIBMEMCACHED_LINK_LIBRARIES})
-endif()
-target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
+option(WITH_MEMCACHED "Enable support for Memcached" ON)
+IF (WITH_MEMCACHED)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBMEMCACHED REQUIRED IMPORTED_TARGET libmemcached)
+    if(${LIBMEMCACHED_FOUND})
+        add_definitions(-DSIA_MEMCACHED)
+    #    MESSAGE(${PKG_CONFIG_EXECUTABLE})
+    #    MESSAGE(${LIBMEMCACHED_LIBRARIES})
+    #    MESSAGE(${LIBMEMCACHED_LINK_LIBRARIES})
+    endif()
+    target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
+ENDIF (WITH_MEMCACHED)
 
 pkg_check_modules(LIBFUSE3 IMPORTED_TARGET fuse3)
 IF(${LIBFUSE3_FOUND})
@@ -86,6 +90,12 @@ target_link_libraries(siafs PUBLIC ${LIBCURL_LIBRARIES})
 
 pkg_check_modules(LIBCJSON REQUIRED IMPORTED_TARGET libcjson)
 target_link_libraries(siafs PUBLIC ${LIBCJSON_LIBRARIES})
+
+option(WITH_METACACHE "Enable support for meta cache" ON)
+IF (WITH_METACACHE)
+	add_definitions(-DSIA_METACACHE)
+ENDIF(WITH_METACACHE)
+
 
 install(FILES mount.siafs DESTINATION sbin)
 install(TARGETS siafs RUNTIME DESTINATION bin)

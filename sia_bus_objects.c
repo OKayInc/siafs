@@ -152,6 +152,23 @@ unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL))){
+            // Evaluate
+            answer = 1;
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %u", __FILE_NAME__, __LINE__, answer);
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
+#endif
 
     char *json_payload = sia_bus_objects_list_json(opt, path);
     if (json_payload != NULL){
@@ -168,7 +185,7 @@ unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
             cJSON *objects = NULL;
             cJSON *object = NULL;
             objects = cJSON_GetObjectItemCaseSensitive(monitor_json, "objects");
-            if (objects != NULL){
+            if ((objects != NULL) && !cJSON_IsNull(objects) && cJSON_IsArray(objects)){
                 cJSON_ArrayForEach(object, objects){
                     cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
                     cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
@@ -177,8 +194,16 @@ unsigned short int sia_bus_objects_exists(sia_cfg_t *opt, const char *path){
                             fprintf(stderr, "%s:%d Found: %s\n", __FILE_NAME__, __LINE__, name->valuestring);
                         }
                         answer = 1;
-                        break;
                     }
+#ifdef SIA_METACACHE
+                    if (opt->verbose){
+                        fprintf(stderr, "%s:%d %s SIA_METACACHE PUSH\n", __FILE_NAME__, __LINE__, __func__);
+                    }
+                    sia_metacache_t *mn = build_meta_node_from_json(object);
+                    if (NULL != add_meta(opt, mn)){
+                        free (mn); mn = NULL;
+                    }
+#endif
                 }
                 cJSON_Delete(monitor_json);
             }
@@ -196,6 +221,25 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL))){
+            // Evaluate
+            if (meta->type == SIA_DIR){
+                answer = 1;
+            }
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %u", __FILE_NAME__, __LINE__, answer);
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
+#endif
 
     char *path2 = NULL;
     if (path[(strlen(path) - 1)] != '/'){
@@ -225,13 +269,22 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
             cJSON *objects = NULL;
             cJSON *object = NULL;
             objects = cJSON_GetObjectItemCaseSensitive(monitor_json, "objects");
-            if (objects){
+            if ((objects != NULL) && !cJSON_IsNull(objects) && cJSON_IsArray(objects)){
                 cJSON_ArrayForEach(object, objects){
                     cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
                     cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
                     if (!strcmp(name->valuestring, path2) && (size->valueint == 0)){
                         answer =  1;
                     }
+#ifdef SIA_METACACHE
+                    if (opt->verbose){
+                        fprintf(stderr, "%s:%d %s SIA_METACACHE PUSH\n", __FILE_NAME__, __LINE__, __func__);
+                    }
+                    sia_metacache_t *mn = build_meta_node_from_json(object);
+                    if (NULL != add_meta(opt, mn)){
+                        free (mn); mn = NULL;
+                    }
+#endif
                 }
             }
             cJSON_Delete(monitor_json);
@@ -243,17 +296,20 @@ unsigned short int sia_bus_objects_is_dir(sia_cfg_t *opt, const char *path){
 
 unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
     unsigned short int answer = 0;
-    sia_metacache_t *meta = NULL;
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
 
-    meta = find_meta_by_path(opt, path);
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
     if (meta != NULL){
-        if (meta->expire < (time(NULL) + SIA_METACACHE_TTL)){
+        if (meta->expire < (time(NULL))){
             // Evaluate
             if (meta->type == SIA_FILE){
                 answer = 1;
+            }
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %u", __FILE_NAME__, __LINE__, answer);
             }
             return answer;
         }
@@ -262,7 +318,9 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
             del_meta(opt, meta);
         }
     }
-    char *json_payload = sia_bus_objects_json(opt, path);
+#endif
+
+    char *json_payload = sia_bus_objects_list_json(opt, path);
     if (json_payload != NULL){
         if(opt->verbose){
             fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
@@ -274,10 +332,32 @@ unsigned short int sia_bus_objects_is_file(sia_cfg_t *opt, const char *path){
             fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
         }
         else{
+            cJSON *objects = NULL;
             cJSON *object = NULL;
-            object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
-            if (object){
-                answer = cJSON_IsObject(object);
+            objects = cJSON_GetObjectItemCaseSensitive(monitor_json, "objects");
+            if ((objects != NULL) && !cJSON_IsNull(objects) && cJSON_IsArray(objects)){
+                cJSON_ArrayForEach(object, objects){
+                    cJSON *name = cJSON_GetObjectItemCaseSensitive(object, "name");
+                    cJSON *size = cJSON_GetObjectItemCaseSensitive(object, "size");
+                    if ((!strcmp(name->valuestring, path)) && (name->valuestring[(strlen(name->valuestring) - 1)] != '/')){
+                        answer =  1;
+                    }
+#ifdef SIA_METACACHE
+                    if (opt->verbose){
+                        fprintf(stderr, "%s:%d %s SIA_METACACHE PUSH\n", __FILE_NAME__, __LINE__, __func__);
+                    }
+                    dump_all_meta(opt);
+                    sia_metacache_t *mn = build_meta_node_from_json(object);
+                    dump_meta(mn);
+                    if (mn != NULL){
+                        sia_metacache_t *a = add_meta(opt, mn);
+//                        if (a != NULL){
+//                            free (mn); mn = NULL;
+//                        }
+                    }
+                    dump_all_meta(opt);
+#endif
+                }
             }
             cJSON_Delete(monitor_json);
         }
@@ -290,6 +370,27 @@ unsigned long int sia_bus_object_size(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
+
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL))){
+            // Evaluate
+            if (meta->type == SIA_FILE){
+                answer = meta->size;
+            }
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %lu", __FILE_NAME__, __LINE__, answer);
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
+#endif
+
     char *json_payload = sia_bus_objects_json(opt, path);
     if (json_payload != NULL){
         if(opt->verbose){
@@ -398,6 +499,28 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
 
 time_t sia_bus_objects_unixtime(sia_cfg_t *opt, const char *path){
     time_t answer = 0;
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
+    }
+
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL))){
+            // Evaluate
+            answer = meta->modtime;
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %lu", __FILE_NAME__, __LINE__, answer);
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
+#endif
+
     char timestamp[32] = {0};
     char *time_payload = sia_bus_objects_modtime(opt, path);
     strcpy(timestamp, sia_bus_objects_modtime(opt, path));
@@ -416,6 +539,7 @@ time_t sia_bus_objects_unixtime(sia_cfg_t *opt, const char *path){
     }
     return answer;
 }
+
 char *sia_bus_del_object(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
         fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);

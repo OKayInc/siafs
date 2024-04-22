@@ -13,7 +13,11 @@ extern "C"
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
-#define SIA_METACACHE_TTL   10
+#ifdef SIA_MEMCACHED
+#include "memcached_cache.h"
+#endif
+
+#define SIA_METACACHE_TTL   600
 #define SIA_CACHE_TTL   5
 #define SIA_MAX_PARTS   10000
 
@@ -32,7 +36,7 @@ typedef enum file_type_e {
 
 typedef struct sia_metacache_s{
     char *name;                     // the path
-    sia_object_type_t type;                    // SIA_DIR or SIA_FILE
+    sia_object_type_t type;         // check ENUM for possible values
     unsigned long long int size;    // Size, must be 0 for SIA_DIR
     time_t modtime;
     time_t expire;                  // Data valid until expire
@@ -40,10 +44,12 @@ typedef struct sia_metacache_s{
 } sia_metacache_t;
 
 typedef struct sia_cache_s{
-    int (*add)(const char *key, const void *payload, const unsigned long int sz);
-    int (*del)(const char *key);
-    int (*get)(const char *key, void *payload, unsigned long int *sz);
-    int (*purge)();
+    char *(*key)(const char *endpoint, const char *path);
+    unsigned int (*init)(void **memc, void **servers);
+    unsigned int (*set)(const char *key, const void *payload, const unsigned long int payload_len);
+    unsigned int (*del)(const char *key);
+    unsigned int (*get)(const char *key, void *payload, unsigned long int *payload_len);
+    unsigned int (*purge)();
 } sia_cache_t;
 
 // Multi-part upload structures
@@ -77,14 +83,25 @@ typedef struct{
     short verbose;
     unsigned int maxhandle;
     sia_upload_t *uploads;
+#ifdef SIA_METACACHE
     sia_metacache_t *metacache;
+#endif
     sia_cache_t *L1;
     sia_cache_t *L2;
 }sia_cfg_t;
 
+time_t string2unixtime(char *timestamp);
+
+#ifdef SIA_METACACHE
+sia_metacache_t *dump_meta(sia_metacache_t *meta);
+sia_metacache_t *dump_all_meta(sia_cfg_t *opt);
 sia_metacache_t *append_meta(sia_cfg_t *opt, sia_metacache_t *meta);
 sia_metacache_t *del_meta(sia_cfg_t *opt, sia_metacache_t *meta);
 sia_metacache_t *find_meta_by_path(sia_cfg_t *opt, const char *path);
+sia_metacache_t *build_meta_node_from_json(cJSON *object);
+sia_metacache_t *update_meta(sia_cfg_t *opt, sia_metacache_t *src, sia_metacache_t *dst);
+sia_metacache_t *add_meta(sia_cfg_t *opt, sia_metacache_t *meta);
+#endif
 
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload);

@@ -2,6 +2,11 @@
 #include "sia.h"
 
 extern sia_cfg_t opt;
+#ifdef SIA_MEMCACHED
+extern memcached_server_st *servers;
+extern memcached_st *memc;
+#endif
+
 #if FUSE_USE_VERSION < 30
 int siafs_getattr(const char *path, struct stat *stbuf){
 #else
@@ -25,28 +30,31 @@ int siafs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
         stbuf->st_nlink = 2;
         stbuf->st_mtime = time(NULL);   // If / sends todays mod time, SIA doesn't return information for /
     }
-    else if (sia_bus_objects_is_file(&opt, path) == 1 ){
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d %s is a file\n", __FILE_NAME__, __LINE__, path);
-        }
-        stbuf->st_mode = S_IFREG | 0644;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = sia_bus_object_size(&opt, path);    // FIX this
-        stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d file size: %ld\n", __FILE_NAME__, __LINE__, stbuf->st_size);
-        }
-    }
-    else if (sia_bus_objects_is_dir(&opt, path) == 1 ){
-        if(opt.verbose){
-            fprintf(stderr, "%s:%d %s is a directory\n", __FILE_NAME__, __LINE__, path);
-        }
-        stbuf->st_mode = S_IFDIR | 0755;
-        stbuf->st_nlink = 2;
-        stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
-    }
     else{
-        return -ENOENT;
+
+        if (sia_bus_objects_is_file(&opt, path) == 1 ){
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d %s is a file\n", __FILE_NAME__, __LINE__, path);
+            }
+            stbuf->st_mode = S_IFREG | 0644;
+            stbuf->st_nlink = 1;
+            stbuf->st_size = sia_bus_object_size(&opt, path);
+            stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d file size: %ld\n", __FILE_NAME__, __LINE__, stbuf->st_size);
+            }
+        }
+        else if (sia_bus_objects_is_dir(&opt, path) == 1 ){
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d %s is a directory\n", __FILE_NAME__, __LINE__, path);
+            }
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+            stbuf->st_mtime = sia_bus_objects_unixtime(&opt, path);
+        }
+        else{
+            return -ENOENT;
+        }
     }
     return 0;
 }
@@ -390,11 +398,33 @@ int sias_statfs(const char *path, struct statvfs *stbuf){
     stbuf->f_bfree = stbuf->f_bavail = stbuf->f_blocks - used;
     return 0;
 }
+
 #if FUSE_USE_VERSION < 30
 void *siafs_init(struct fuse_conn_info *conn){
 #else
 void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     cfg->auto_cache = 1;
+#endif
+#ifdef SIA_MEMCACHED
+    opt.L1 = calloc(1, sizeof(sia_cache_t));
+    opt.L1->init = mc_init;
+    opt.L1->set = mc_set;
+    opt.L1->get = mc_get;
+    opt.L1->del = mc_del;
+
+    memcached_return rc;
+    rc = (memcached_return)(opt.L1->init)((void**)&memc, (void**)&servers);
+    if (rc == MEMCACHED_SUCCESS){
+        if(opt.verbose){
+            fprintf(stderr, "Added server successfully\n");
+        }
+    }
+    else{
+        if(opt.verbose){
+            fprintf(stderr, "Couldn't add server: %s\n", memcached_strerror(memc, rc));
+        }
+        exit(EXIT_FAILURE);
+    }
 #endif
    return NULL;
 }

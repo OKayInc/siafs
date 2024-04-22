@@ -35,12 +35,14 @@ sia_cfg_t opt = {
     .verbose = 0,
     .maxhandle = 10,
     .uploads = NULL,
+#ifdef SIA_METACACHE
     .metacache = NULL,
+#endif
     .L1 = NULL,
     .L2 = NULL,
 };
 
-static struct fuse_operations operations = {
+struct fuse_operations operations = {
     .init       = siafs_init,
     .getattr	= siafs_getattr,
     .readdir	= siafs_readdir,
@@ -182,22 +184,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr, "sia_consensus_state_synced is false!\n");
         exit(EXIT_FAILURE);
     }
-/**
-    // Experiments
- CURL *curl = curl_easy_init();
- char *u = "EPSON ET-8550 L8180 Series Velvet Fine Art.icc";
-  if(curl) {
-    int i;
-//    char *output = curl_easy_unescape(curl, u, strlen(u), &i);
-    char *output = curl_easy_escape(curl, u, strlen(u));
-    if(output) {
-      printf("Decoded: %s\n", output);
-      curl_free(output);
-    }
-    curl_easy_cleanup(curl);
-  };
 
-  **/
     fuse_main(args.argc, args.argv, &operations, NULL);
     fuse_opt_free_args(&args);
     exit(EXIT_SUCCESS);
