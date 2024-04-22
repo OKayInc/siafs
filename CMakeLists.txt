@@ -91,9 +91,9 @@ target_link_libraries(siafs PUBLIC ${LIBCURL_LIBRARIES})
 pkg_check_modules(LIBCJSON REQUIRED IMPORTED_TARGET libcjson)
 target_link_libraries(siafs PUBLIC ${LIBCJSON_LIBRARIES})
 
-option(WITH_METACACHE "Enable support for meta cache" ON)
+option(WITH_METACACHE "Enable support for meta cache" OFF)
 IF (WITH_METACACHE)
-	add_definitions(-DSIA_METACACHE)
+#	add_definitions(-DSIA_METACACHE)
 ENDIF(WITH_METACACHE)
 
 

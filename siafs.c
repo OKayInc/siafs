@@ -401,10 +401,16 @@ int sias_statfs(const char *path, struct statvfs *stbuf){
 
 #if FUSE_USE_VERSION < 30
 void *siafs_init(struct fuse_conn_info *conn){
+#ifdef FUSE_CAP_BIG_WRITES
+    if(conn->capable & FUSE_CAP_BIG_WRITES){
+        conn->want |= FUSE_CAP_BIG_WRITES;
+    }
+#endif
 #else
 void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     cfg->auto_cache = 1;
 #endif
+    conn->max_write = 1 << 20;
 #ifdef SIA_MEMCACHED
     opt.L1 = calloc(1, sizeof(sia_cache_t));
     opt.L1->init = mc_init;
