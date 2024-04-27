@@ -30,6 +30,7 @@ siafs uses `CMake`.
 
 #### Requirements
 * A working renterd (you may use testnet for testing)
+* libmemcached
 * libcjson
 * libcurl
 * libfuse 2.9+ (3 recommended)
