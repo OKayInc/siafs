@@ -40,6 +40,10 @@ sia_cfg_t opt = {
 #endif
     .L1 = NULL,
     .L2 = NULL,
+#ifdef SIA_MEMCACHED
+    .servers = NULL,
+    .memc = NULL,
+#endif
 };
 
 struct fuse_operations operations = {
@@ -52,6 +56,7 @@ struct fuse_operations operations = {
     .write      = siafs_write,
     .release    = siafs_release,
     .open       = siafs_open,
+    .flush      = siafs_flush,
 #ifdef HAVE_XATTR
     .getxattr   = siafs_getxattr,
     .setxattr   = siafs_setxattr,

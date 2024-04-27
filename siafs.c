@@ -271,6 +271,31 @@ int siafs_open(const char *path, struct fuse_file_info *info){
     return 0;
 }
 
+int siafs_flush(const char *path, struct fuse_file_info *info){
+#ifdef SIA_MEMCACHED
+    char *key1 = opt.L1->key("api/bus/objects", path, "sia_bus_objects_json");
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d key1 %s\n", __FILE_NAME__, __LINE__, key1);
+    }
+
+    char *key2 = opt.L1->key("api/bus/objects/list", path, "sia_bus_objects_list_json");
+    if(opt.verbose){
+        fprintf(stderr, "%s:%d key2 %s\n", __FILE_NAME__, __LINE__, key2);
+    }
+
+    memcached_return rc;
+    if (key1 != NULL){
+        rc = (memcached_return)(opt.L1->del)(opt.memc, key1);
+        free(key1);
+    }
+    if (key2 != NULL){
+        rc = (memcached_return)(opt.L1->del)(opt.memc, key2);
+        free(key2);
+    }
+#endif
+    return 0;
+}
+
 #ifdef HAVE_XATTR
 int siafs_getxattr(const char *path, const char *key, char *val, size_t sz){
     if(opt.verbose){
@@ -413,13 +438,15 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     conn->max_write = 1 << 20;
 #ifdef SIA_MEMCACHED
     opt.L1 = calloc(1, sizeof(sia_cache_t));
+    opt.L1->key = mc_key;
     opt.L1->init = mc_init;
     opt.L1->set = mc_set;
     opt.L1->get = mc_get;
     opt.L1->del = mc_del;
+    opt.L1->flush = mc_flush;
 
     memcached_return rc;
-    rc = (memcached_return)(opt.L1->init)((void**)&memc, (void**)&servers);
+    rc = (memcached_return)(opt.L1->init)((void**)&opt.memc, (void**)&opt.servers);
     if (rc == MEMCACHED_SUCCESS){
         if(opt.verbose){
             fprintf(stderr, "Added server successfully\n");
@@ -427,7 +454,7 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     }
     else{
         if(opt.verbose){
-            fprintf(stderr, "Couldn't add server: %s\n", memcached_strerror(memc, rc));
+            fprintf(stderr, "Couldn't add server: %s\n", memcached_strerror(opt.memc, rc));
         }
         exit(EXIT_FAILURE);
     }

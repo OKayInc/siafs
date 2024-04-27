@@ -276,8 +276,7 @@ size_t capture_payload(void *contents, size_t sz, size_t nmemb, void *ctx){
     sia_http_payload_t *data = (sia_http_payload_t *)ctx;
     char *ptr;
     if (data->data == NULL){
-        ptr = malloc(data->len + realsize + 1);
-        memset(ptr, 0, data->len + realsize + 1);
+        ptr = calloc(data->len + realsize + 1, sizeof(char));
     }
     else{
         ptr = realloc(data->data, data->len + realsize + 1);

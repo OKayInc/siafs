@@ -16,6 +16,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
 add_executable(siafs
     main.c
+    md5.h
+    md5.c
     memcached_cache.h
     memcached_cache.c
     sia_defaults.h

@@ -44,6 +44,8 @@ int siafs_mknod(const char *path, mode_t mode, dev_t rdev);
 int siafs_write( const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *info );
 int siafs_release(const char *path, struct fuse_file_info *info);
 int siafs_open(const char *path, struct fuse_file_info *info);
+int siafs_flush(const char *path, struct fuse_file_info *info);
+
 #ifdef HAVE_XATTR
 #warning HAVE_XATTR defined
 int siafs_getxattr(const char *path, const char *key, char *val, size_t sz);

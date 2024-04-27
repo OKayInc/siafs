@@ -48,6 +48,22 @@ char *sia_bus_objects_json(sia_cfg_t *opt, const char *path){
     http_payload.len = 0;
     http_payload.data = NULL;
 
+#ifdef SIA_MEMCACHED
+    char *key = opt->L1->key("api/bus/objects", path, __func__);
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d MC Key: %s\n", __FILE_NAME__, __LINE__, key);
+    }
+    unsigned long int *payload_len = (unsigned long int *)calloc(1, sizeof(unsigned long int));
+    memcached_return rc = opt->L1->get(opt->memc, key, &payload, payload_len);
+    if ((rc != MEMCACHED_SUCCESS) || (payload == NULL)){
+        payload = NULL;
+    }
+    else if(opt->verbose){
+        fprintf(stderr, "%s:%d MC Key: %s FOUND: %s\n", __FILE_NAME__, __LINE__, key, (char *)payload);
+    }
+    free(payload_len);
+#endif
+
     if (payload == NULL){
         CURL *curl;
         CURLcode res;
@@ -77,10 +93,25 @@ char *sia_bus_objects_json(sia_cfg_t *opt, const char *path){
 //        sia_set_to_cache(final_url, http_payload.data);
         payload = http_payload.data;
 
+#ifdef SIA_MEMCACHED
+        memcached_return rc = opt->L1->set(opt->memc, key, http_payload.data, http_payload.len);
+        if (rc != MEMCACHED_SUCCESS){
+            payload = NULL;
+        }
+        else if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s SET\n", __FILE_NAME__, __LINE__, key);
+        }
+#endif
         curl_easy_cleanup(curl);
         free(final_url);
         final_url = NULL;
     }
+#ifdef SIA_MEMCACHED
+    if (key != NULL){
+        free(key);
+        key = NULL;
+    }
+#endif
     return payload;
 }
 
@@ -104,6 +135,22 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
     sia_http_payload_t http_payload;
     http_payload.len = 0;
     http_payload.data = NULL;
+
+#ifdef SIA_MEMCACHED
+    char *key = opt->L1->key("api/bus/objects/list", path, __func__);
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d MC Key: %s\n", __FILE_NAME__, __LINE__, key);
+    }
+    unsigned long int *payload_len = (unsigned long int *)calloc(1, sizeof(unsigned long int));
+    memcached_return rc = opt->L1->get(opt->memc, key, &payload, payload_len);
+    if ((rc != MEMCACHED_SUCCESS) || (payload == NULL)){
+        payload = NULL;
+    }
+    else if(opt->verbose){
+        fprintf(stderr, "%s:%d MC Key: %s FOUND: %s\n", __FILE_NAME__, __LINE__, key, (char *)payload);
+    }
+    free(payload_len);
+#endif
 
     if (payload == NULL){
         CURL *curl;
@@ -139,11 +186,26 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
 //        sia_set_to_cache(final_url, http_payload.data);
         payload = http_payload.data;
 
+#ifdef SIA_MEMCACHED
+        memcached_return rc = opt->L1->set(opt->memc, key, http_payload.data, http_payload.len);
+        if (rc != MEMCACHED_SUCCESS){
+            payload = NULL;
+        }
+        else if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s SET\n", __FILE_NAME__, __LINE__, key);
+        }
+#endif
+
         curl_easy_cleanup(curl);
         free(final_url);
         final_url = NULL;
     }
-
+#ifdef SIA_MEMCACHED
+    if (key != NULL){
+        free(key);
+        key = NULL;
+    }
+#endif
     return payload;
 }
 

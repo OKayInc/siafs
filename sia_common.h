@@ -44,12 +44,12 @@ typedef struct sia_metacache_s{
 } sia_metacache_t;
 
 typedef struct sia_cache_s{
-    char *(*key)(const char *endpoint, const char *path);
+    char *(*key)(const char *endpoint, const char *path, const char *extra);
     unsigned int (*init)(void **memc, void **servers);
-    unsigned int (*set)(const char *key, const void *payload, const unsigned long int payload_len);
-    unsigned int (*del)(const char *key);
-    unsigned int (*get)(const char *key, void *payload, unsigned long int *payload_len);
-    unsigned int (*purge)();
+    unsigned int (*set)(const void *memc, const char *key, const void *payload, const unsigned long int payload_len);
+    unsigned int (*del)(const void *memc, const char *key);
+    unsigned int (*get)(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
+    unsigned int (*flush)(const void *memc);
 } sia_cache_t;
 
 // Multi-part upload structures
@@ -88,6 +88,10 @@ typedef struct{
 #endif
     sia_cache_t *L1;
     sia_cache_t *L2;
+#ifdef SIA_MEMCACHED
+    memcached_server_st *servers;
+    memcached_st *memc;
+#endif
 }sia_cfg_t;
 
 time_t string2unixtime(char *timestamp);
