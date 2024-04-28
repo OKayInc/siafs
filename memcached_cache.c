@@ -60,11 +60,11 @@ unsigned int mc_init(void **memc, void **servers){
     return (unsigned int)rc;
 }
 
-unsigned int mc_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len){
+unsigned int mc_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration){
     memcached_return_t rc;
     size_t klen = strlen(key);
 
-    rc = memcached_set((memcached_st *)memc, key, klen, payload, payload_len, (time_t)MEMCACHED_EXPIRATION, (uint32_t)0);
+    rc = memcached_set((memcached_st *)memc, key, klen, payload, payload_len, (time_t)expiration, (uint32_t)0);
     if (rc != MEMCACHED_SUCCESS)
         fprintf(stderr, "Couldn't set key: %s\n", memcached_strerror(memc, rc));
 

@@ -13,11 +13,10 @@ extern "C"
 #include "md5.h"
 
 #define MEMCACHED_HOST          "127.0.0.1"
-#define MEMCACHED_EXPIRATION    10
 
 char *mc_key(const char *endpoint, const char *path, const char* extra);
 unsigned int mc_init(void **memc, void **servers);
-unsigned int mc_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len);
+unsigned int mc_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration);
 unsigned int mc_get(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
 unsigned int mc_del(const void *memc, const char *key);
 unsigned int mc_flush(const void *memc);

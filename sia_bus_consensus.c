@@ -12,7 +12,7 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
     }
 
     char *final_url;
-    final_url = malloc(sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+1);
+    final_url = calloc(strlen(opt->unauthenticated_url)+24, sizeof(char));
     strcpy(final_url, opt->unauthenticated_url);
     strcat(final_url, "api/bus/consensus/state");
 
@@ -26,11 +26,28 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
     http_payload.len = 0;
     http_payload.data = NULL;
 
+#ifdef SIA_MEMCACHED
+    char *key = NULL;
+    if (opt->L1 != NULL){
+        key = opt->L1->key("api/bus/consensus/state", "*SIA*", __func__);
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s\n", __FILE_NAME__, __LINE__, key);
+        }
+        unsigned long int *payload_len = (unsigned long int *)calloc(1, sizeof(unsigned long int));
+        memcached_return rc = opt->L1->get(opt->memc, key, &payload, payload_len);
+        if ((rc != MEMCACHED_SUCCESS) || (payload == NULL)){
+            payload = NULL;
+        }
+        else if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s FOUND: %s\n", __FILE_NAME__, __LINE__, key, (char *)payload);
+        }
+        free(payload_len);
+    }
+#endif
+
     if (payload == NULL){
-        CURL *curl;
+        CURL *curl = curl_easy_init();
         CURLcode res;
-        payload = malloc(1024);    // TODO: find a way to predict a suitable size
-        curl = curl_easy_init();
         if(curl) {
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
             curl_easy_setopt(curl, CURLOPT_URL, final_url);
@@ -47,17 +64,35 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             res = curl_easy_perform(curl);
-        }
 
-        if(opt->verbose){
-            fprintf(stderr, "%s:%d payload: %s\n", __FILE_NAME__, __LINE__, (char *)http_payload.data);
-        }
-        // sia_set_to_cache(final_url, http_payload.data);
-        payload = http_payload.data;
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d payload: %s\n", __FILE_NAME__, __LINE__, (char *)http_payload.data);
+            }
+            // sia_set_to_cache(final_url, http_payload.data);
+            payload = http_payload.data;
 
-        curl_easy_cleanup(curl);
-        free(final_url);
+#ifdef SIA_MEMCACHED
+            if (opt->L1 != NULL){
+                memcached_return rc = opt->L1->set(opt->memc, key, http_payload.data, http_payload.len, SIA_BLOCKCHAIN_TTL);
+                if (rc != MEMCACHED_SUCCESS){
+        //            payload = NULL;
+                }
+                else if(opt->verbose){
+                    fprintf(stderr, "%s:%d MC Key: %s SET\n", __FILE_NAME__, __LINE__, key);
+                }
+            }
+#endif
+            curl_easy_cleanup(curl);
+        }
     }
+    fprintf(stderr, "abcedefgh\n");
+    free(final_url);
+#ifdef SIA_MEMCACHED
+    if (key != NULL){
+        free(key);
+        key = NULL;
+    }
+#endif
     return payload;
 }
 

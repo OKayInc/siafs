@@ -22,6 +22,25 @@ char *sia_stats_json(sia_cfg_t *opt){
     http_payload.len = 0;
     http_payload.data = NULL;
 
+#ifdef SIA_MEMCACHED
+    char *key = NULL;
+    if (opt->L1 != NULL){
+        key = opt->L1->key("api/stats", "*SIA*", __func__);
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s\n", __FILE_NAME__, __LINE__, key);
+        }
+        unsigned long int *payload_len = (unsigned long int *)calloc(1, sizeof(unsigned long int));
+        memcached_return rc = opt->L1->get(opt->memc, key, &payload, payload_len);
+        if ((rc != MEMCACHED_SUCCESS) || (payload == NULL)){
+            payload = NULL;
+        }
+        else if(opt->verbose){
+            fprintf(stderr, "%s:%d MC Key: %s FOUND: %s\n", __FILE_NAME__, __LINE__, key, (char *)payload);
+        }
+        free(payload_len);
+    }
+#endif
+
     if (payload == NULL){
         CURL *curl;
         CURLcode res;
@@ -42,20 +61,40 @@ char *sia_stats_json(sia_cfg_t *opt){
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
 //            curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
-        }
 
-        if(opt->verbose){
-            fprintf(stderr, "%s:%d %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)http_payload.data);
-        }
-//        sia_set_to_cache(final_url, http_payload.data);
-        payload = http_payload.data;
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)http_payload.data);
+            }
+    //        sia_set_to_cache(final_url, http_payload.data);
+            payload = http_payload.data;
 
-        curl_easy_cleanup(curl);
+#ifdef SIA_MEMCACHED
+            if (opt->L1 != NULL){
+                memcached_return rc = opt->L1->set(opt->memc, key, http_payload.data, http_payload.len, SIA_BLOCKCHAIN_TTL);
+                if (rc != MEMCACHED_SUCCESS){
+        //            payload = NULL;
+                }
+                else if(opt->verbose){
+                    fprintf(stderr, "%s:%d MC Key: %s SET\n", __FILE_NAME__, __LINE__, key);
+                }
+            }
+#endif
+            curl_easy_cleanup(curl);
+        }
     }
+#ifdef SIA_MEMCACHED
+    if (key != NULL){
+        free(key);
+        key = NULL;
+    }
+#endif
     return payload;
 }
 
 unsigned long long int sia_stats_totalStorage(sia_cfg_t *opt){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url);
+    }
     unsigned long long int answer = 0;
     double answerd = 0.0;
 
@@ -79,7 +118,6 @@ unsigned long long int sia_stats_totalStorage(sia_cfg_t *opt){
                         fprintf(stderr, "%s:%d totalStorage: %s\n", __FILE_NAME__, __LINE__, totalStorage->valuestring);
                     }
                     // 6.74 PB
-                    // TODO: Convert PB prefix to bytes
                     char *ptr;
                     answerd = strtof(totalStorage->valuestring, &ptr);
                     unsigned long long int m = 1;
@@ -100,7 +138,7 @@ unsigned long long int sia_stats_totalStorage(sia_cfg_t *opt){
                     answer = m * answerd;
                     if(opt->verbose){
                         fprintf(stderr, "%s:%d bytes: %.2f [%s]\n", __FILE_NAME__, __LINE__, answerd, ptr+1);
-                        fprintf(stderr, "%s:%d bytes: %lu\n", __FILE_NAME__, __LINE__, answer);
+                        fprintf(stderr, "%s:%d bytes: %llu\n", __FILE_NAME__, __LINE__, answer);
                     }
                 }
             }

@@ -18,6 +18,7 @@ extern "C"
 #endif
 
 #define SIA_METACACHE_TTL   600
+#define SIA_BLOCKCHAIN_TTL  3600
 #define SIA_CACHE_TTL   5
 #define SIA_MAX_PARTS   10000
 
@@ -46,7 +47,7 @@ typedef struct sia_metacache_s{
 typedef struct sia_cache_s{
     char *(*key)(const char *endpoint, const char *path, const char *extra);
     unsigned int (*init)(void **memc, void **servers);
-    unsigned int (*set)(const void *memc, const char *key, const void *payload, const unsigned long int payload_len);
+    unsigned int (*set)(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration);
     unsigned int (*del)(const void *memc, const char *key);
     unsigned int (*get)(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
     unsigned int (*flush)(const void *memc);
