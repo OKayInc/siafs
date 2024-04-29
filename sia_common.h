@@ -10,9 +10,11 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
+#include "base64.h"
 #ifdef SIA_MEMCACHED
 #include "memcached_cache.h"
 #endif
@@ -92,10 +94,17 @@ typedef struct{
 #ifdef SIA_MEMCACHED
     memcached_server_st *servers;
     memcached_st *memc;
+    cJSON *payload_buffer;
 #endif
 }sia_cfg_t;
 
+char *b64cat(unsigned int n, ...);
 time_t string2unixtime(char *timestamp);
+cJSON *push_file(sia_cfg_t *opt, const char *path);
+cJSON *find_file_by_path(sia_cfg_t *opt, const char *path);
+cJSON *push_payload_multipart(sia_cfg_t *opt, const cJSON *file, const unsigned pn, const char *base64);
+cJSON *find_payload_multipart_by_number(sia_cfg_t *opt, const cJSON *file, const unsigned pn);
+unsigned long long find_payload_multipart_size(sia_cfg_t *opt, const cJSON *file);
 
 #ifdef SIA_METACACHE
 sia_metacache_t *dump_meta(sia_metacache_t *meta);

@@ -43,6 +43,7 @@ sia_cfg_t opt = {
 #ifdef SIA_MEMCACHED
     .servers = NULL,
     .memc = NULL,
+    .payload_buffer = NULL,
 #endif
 };
 

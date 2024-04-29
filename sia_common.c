@@ -12,6 +12,155 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
+char *b64cat(unsigned int n, ...){
+    char *b64 = NULL;
+    if (n > 0){
+        va_list valist;
+        va_start(valist, n);
+
+        unsigned char *s = NULL;
+        unsigned char *z = NULL;
+        unsigned char *zz = NULL;
+        size_t lz = 0;
+        size_t t = 0;
+        for (unsigned int i = 0; i < n; i++){
+            s = va_arg(valist, unsigned char *);
+            z = base64_decode(s, strlen(s), &lz);
+            if (lz > 0){
+                t += lz;
+                char *ptr;
+                if (zz == NULL){
+                    ptr = calloc(lz, sizeof(unsigned char));
+                }
+                else{
+                    ptr = realloc(zz, t);
+                }
+                if(!ptr)
+                    return NULL;
+                zz = ptr;
+                memcpy(&(zz[t]), z, lz);
+            }
+        }
+        if ((t > 0) && (zz != NULL)){
+            size_t ol = 0;
+            b64 = base64_encode(zz, t, &ol);
+        }
+    }
+    return b64;
+}
+
+// {files: [{name: "name", multiparts: [{part: 0, data: "XXX"},...]},...]}
+cJSON *push_file(sia_cfg_t *opt, const char *path){
+    cJSON *leaf = NULL;
+    leaf = find_file_by_path(opt, path);
+    if (leaf == NULL){
+        // File payload not found
+        leaf = cJSON_CreateObject();
+        if (leaf != NULL){
+            cJSON *filename = cJSON_CreateString(path);
+            cJSON_AddItemToObject(leaf, "name", filename);
+            cJSON *multiparts = cJSON_CreateArray();
+            cJSON_AddItemToObject(leaf, "multiparts", multiparts);
+            // At this very moment, multiparts is an empty array
+            cJSON *files = cJSON_GetObjectItemCaseSensitive(opt->payload_buffer, "files");
+            if (cJSON_IsArray(files)){
+                cJSON_AddItemToArray(files, leaf);
+            }
+            else{
+                cJSON_free(leaf);
+                leaf = NULL;
+            }
+        }
+    }
+    return leaf;
+}
+
+cJSON *find_file_by_path(sia_cfg_t *opt, const char *path){
+    cJSON *leaf = NULL;
+    unsigned short found = 0;
+    if (opt->payload_buffer != NULL){
+        cJSON *files = cJSON_GetObjectItemCaseSensitive(opt->payload_buffer, "files");
+        if (cJSON_IsArray(files)){
+            cJSON_ArrayForEach(leaf, files){
+                cJSON *filename = cJSON_GetObjectItemCaseSensitive(leaf, "name");
+                if (cJSON_IsString(filename)){
+                    if (!strcmp(path, filename->valuestring)){
+                        // Valued found
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+            if (!found){
+                leaf = NULL;
+            }
+        }
+    }
+    return leaf;
+}
+
+cJSON *push_payload_multipart(sia_cfg_t *opt, const cJSON *file, const unsigned pn, const char *base64){
+    cJSON *mpart = NULL;
+    mpart = find_payload_multipart_by_number(opt, file, pn);
+    if (mpart == NULL){
+        mpart = cJSON_CreateObject();
+        cJSON *part = cJSON_CreateNumber(pn);
+        cJSON_AddItemToObject(mpart, "part", part);
+        cJSON *data = cJSON_CreateString(base64);
+        cJSON_AddItemToObject(mpart, "data", data);
+        cJSON *multiparts = cJSON_GetObjectItemCaseSensitive(file, "multiparts");
+        if (cJSON_IsArray(multiparts)){
+            cJSON_AddItemToArray(multiparts, mpart);
+        }
+        else{
+            cJSON_free(mpart);
+            mpart = NULL;
+        }
+    }
+    return mpart;
+}
+
+cJSON *find_payload_multipart_by_number(sia_cfg_t *opt, const cJSON *file, const unsigned pn){
+    cJSON *mpart = NULL;
+    unsigned short found = 0;
+    if (file != NULL){
+        cJSON *mparts = cJSON_GetObjectItemCaseSensitive(file, "multiparts");
+        if (cJSON_IsArray(mparts)){
+            cJSON_ArrayForEach(mpart, mparts){
+                cJSON *part = cJSON_GetObjectItemCaseSensitive(mpart, "part");
+                if (cJSON_IsNumber(part)){
+                    if (part->valueint == pn){
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+            if (!found){
+                mpart = NULL;
+            }
+
+        }
+    }
+    return mpart;
+}
+
+unsigned long long find_payload_multipart_size(sia_cfg_t *opt, const cJSON *file){
+    unsigned long long l = 0;
+    if (file != NULL){
+        cJSON *multiparts = cJSON_GetObjectItemCaseSensitive(file, "multiparts");
+        cJSON *mpart = NULL;
+        if (cJSON_IsArray(multiparts)){
+            cJSON_ArrayForEach(mpart, multiparts){
+                cJSON *size = cJSON_GetObjectItemCaseSensitive(mpart, "size");
+                if (cJSON_IsNumber(size)){
+                    l += size->valueint;
+                }
+            }
+        }
+    }
+    return l;
+}
+
 time_t string2unixtime(char *timestamp){
     time_t answer = 0;
     struct tm tm;

@@ -459,5 +459,10 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
         exit(EXIT_FAILURE);
     }
 #endif
+    // create the payload array
+    opt.payload_buffer = cJSON_CreateObject();
+    cJSON *files = cJSON_CreateArray();
+    cJSON_AddItemToObject(opt.payload_buffer, "files", files);
+
    return NULL;
 }

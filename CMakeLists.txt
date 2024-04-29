@@ -15,6 +15,8 @@ ENDIF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 
 add_executable(siafs
+    base64.h
+    base64.c
     main.c
     md5.h
     md5.c
