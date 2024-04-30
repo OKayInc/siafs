@@ -193,6 +193,97 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         sia_worker_put_object(&opt, path, size, offset, (void *)buf);
     }
     else{
+#ifdef SIA_HUGE_FILES
+        cJSON *file = push_file(&opt, path);
+        if (file != NULL){
+            // We have a leaf
+            size_t b64sz = 0;
+            unsigned char *base64 = base64_encode((const unsigned char *)buf, size, &b64sz);
+            if (base64 != NULL){
+                unsigned pn = offset % SIAFS_MULTIPART_DIVS;
+                cJSON *mpart = push_payload_multipart(&opt, file, pn, (const char *)base64);
+                if ((offset % SIAFS_MULTIPART_DIVS) == (SIAFS_MULTIPART_DIVS - 1)){
+                    unsigned sia_mpart = offset / 8 + 1;
+                    // merge the mparts
+                    unsigned char *bin_payload = NULL;
+                    size_t bin_payload_sz = 0;
+                    for (unsigned short int i = 0; i < SIAFS_MULTIPART_DIVS; i++){
+                        cJSON *mp64 = find_payload_multipart_by_number(&opt, file, i);
+                        if (mp64 != NULL){
+                            cJSON *part = cJSON_GetObjectItemCaseSensitive(mp64, "part");
+                            cJSON *data = cJSON_GetObjectItemCaseSensitive(mp64, "data");
+                            size_t bz = 0;
+                            unsigned char *b = base64_decode((const unsigned char*)data->valuestring, strlen(data->valuestring), &bz);
+                            unsigned char *ptr;
+                            if (bin_payload == NULL){
+                                ptr = calloc(bz, sizeof(unsigned char));
+                            }
+                            else{
+                                ptr = realloc(bin_payload, bin_payload_sz + bz);
+                            }
+                            if(!ptr)
+                                return -ENOMEM;
+                            bin_payload = ptr;
+                            memcpy(&(bin_payload[bin_payload_sz]), bin_payload, bin_payload_sz);
+                            bin_payload_sz += bz;
+                        }
+                    }
+                    // bin_payload has the payload
+                    // bin_payload_sz has the lenght
+                    // push them as a single multi_part
+                    char *upload_id = sia_bus_get_uploadid(&opt, path);
+                    off_t slot = offset / SIAFS_SMALL_FILE_SIZE + 1;    // TODO: review this
+                    char *etag = sia_worker_put_multipart(&opt, path, upload_id, size, offset, (void *)buf, slot);
+                    if (etag != NULL){
+                        sia_upload_t *upload;
+
+                        if (offset == 0){
+                            upload = malloc(sizeof(sia_upload_t));
+                            if (upload == NULL){
+                                return -ENOMEM;
+                            }
+                            upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+                            if (upload->name == NULL){
+                                return -ENOMEM;
+                            }
+                            strcpy(upload->name, path);
+                            upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+                            if (upload->uploadID == NULL){
+                                return -ENOMEM;
+                            }
+                            strcpy(upload->uploadID, upload_id);
+                            for (int i = 0; i < SIA_MAX_PARTS; i++){
+                                upload->part[i].etag = NULL;
+                            }
+                            opt.uploads = append_upload(&opt, upload);
+                        }
+                        else{
+                            upload = find_upload_by_path(&opt, path);
+                        }
+                        off_t slot = offset / SIAFS_SMALL_FILE_SIZE;
+                        upload->part[slot].etag = etag;
+                        if(opt.verbose){
+                            fprintf(stderr, "%s:%d Upload Name: %s uploadID: %s\n", __FILE_NAME__, __LINE__, upload->name, upload->uploadID);
+                            fprintf(stderr, "%s:%d Slot: %ld eTag: %s\n", __FILE_NAME__, __LINE__, slot, upload->part[slot].etag);
+                        }
+
+                        for (int i = 0; (i <= slot); i++){
+                            fprintf(stderr, "%s:%d\t%d: %s\n", __FILE_NAME__, __LINE__, i, upload->part[i].etag);
+                        }
+                    }
+                    else{
+                        return 0;
+                    }
+                    // flush everything
+                    flush_payload_multiparts(&opt, file);
+
+                }
+            }
+            else{
+                return -ENOMEM;
+            }
+        }
+#else
         char *upload_id = sia_bus_get_uploadid(&opt, path);
         off_t slot = offset / SIAFS_SMALL_FILE_SIZE + 1;
 
@@ -237,6 +328,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         else{
             return 0;
         }
+#endif
     }
 	return size;
 }
@@ -247,11 +339,14 @@ int siafs_release(const char *path, struct fuse_file_info *info){
     }
 
     if (sia_bus_objects_is_file(&opt, path) || (sia_bus_object_size(&opt, path) == 0)){
+#ifdef SIA_HUGE_FILES
+#else
         // the file is zero bytesthen it might a multipart write op
         sia_upload_t *upload = find_upload_by_path(&opt, path);
         if (upload != NULL){
             char *etag = sia_bus_multipart_complete_json(&opt, path, upload->uploadID);
         }
+#endif
     }
     return 0;
 }

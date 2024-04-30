@@ -161,6 +161,20 @@ unsigned long long find_payload_multipart_size(sia_cfg_t *opt, const cJSON *file
     return l;
 }
 
+void flush_payload_multiparts(sia_cfg_t *opt, const cJSON *file){
+    if (file != NULL){
+        cJSON *multiparts = cJSON_GetObjectItemCaseSensitive(file, "multiparts");
+        if (cJSON_IsArray(multiparts)){
+            unsigned int total = cJSON_GetArraySize(multiparts);
+            if (total > 0){
+                for (unsigned i = 0; i < total; i++){
+                    cJSON_DeleteItemFromArray(multiparts, i);
+                }
+            }
+        }
+    }
+}
+
 time_t string2unixtime(char *timestamp){
     time_t answer = 0;
     struct tm tm;

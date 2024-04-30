@@ -34,6 +34,8 @@
 #define SIAFS_SMALL_FILE_SIZE   131072
 #endif
 
+#define SIAFS_MULTIPART_SIZE	1048576
+#define SIAFS_MULTIPART_DIVS	(SIAFS_MULTIPART_SIZE / SIAFS_SMALL_FILE_SIZE)
 #include "sia.h"
 
 char *sia_concensus_state(sia_cfg_t *opt);

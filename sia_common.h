@@ -21,8 +21,8 @@ extern "C"
 
 #define SIA_METACACHE_TTL   600
 #define SIA_BLOCKCHAIN_TTL  3600
-#define SIA_CACHE_TTL   5
-#define SIA_MAX_PARTS   10000
+#define SIA_CACHE_TTL       5
+#define SIA_MAX_PARTS       10000
 
     // Caching structures
 typedef struct{
@@ -105,6 +105,7 @@ cJSON *find_file_by_path(sia_cfg_t *opt, const char *path);
 cJSON *push_payload_multipart(sia_cfg_t *opt, const cJSON *file, const unsigned pn, const char *base64);
 cJSON *find_payload_multipart_by_number(sia_cfg_t *opt, const cJSON *file, const unsigned pn);
 unsigned long long find_payload_multipart_size(sia_cfg_t *opt, const cJSON *file);
+void flush_payload_multiparts(sia_cfg_t *opt, const cJSON *file);
 
 #ifdef SIA_METACACHE
 sia_metacache_t *dump_meta(sia_metacache_t *meta);
