@@ -58,6 +58,9 @@ typedef struct sia_cache_s{
 // Multi-part upload structures
 typedef struct{
     char *etag;
+#ifdef SIA_HUGE_FILES
+    char *tmpfn;
+#endif
 } sia_uploaded_part_t;
 
 typedef struct sia_upload_s{
@@ -94,8 +97,8 @@ typedef struct{
 #ifdef SIA_MEMCACHED
     memcached_server_st *servers;
     memcached_st *memc;
-    cJSON *payload_buffer;
 #endif
+    cJSON *payload_buffer;
 }sia_cfg_t;
 
 char *b64cat(unsigned int n, ...);

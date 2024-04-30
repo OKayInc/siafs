@@ -194,6 +194,32 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     }
     else{
 #ifdef SIA_HUGE_FILES
+        char *upload_id = sia_bus_get_uploadid(&opt, path);
+        if (offset == 0){
+            // Create the upload node
+            sia_upload_t *upload = malloc(sizeof(sia_upload_t));
+            if (upload == NULL){
+                return -ENOMEM;
+            }
+            upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+            if (upload->name == NULL){
+                return -ENOMEM;
+            }
+            strcpy(upload->name, path);
+            upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+            if (upload->uploadID == NULL){
+                return -ENOMEM;
+            }
+            strcpy(upload->uploadID, upload_id);
+            for (int i = 0; i < SIA_MAX_PARTS; i++){
+                upload->part[i].etag = NULL;
+                upload->part[i].tmpfn = NULL;
+            }
+            opt.uploads = append_upload(&opt, upload);
+        }
+//        char *tmpfn = calloc(L_tmpnam+1, sizeof(char));
+//       tmpfn = tmpnam(tmpfn);
+/**
         cJSON *file = push_file(&opt, path);
         if (file != NULL){
             // We have a leaf
@@ -254,6 +280,9 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                             strcpy(upload->uploadID, upload_id);
                             for (int i = 0; i < SIA_MAX_PARTS; i++){
                                 upload->part[i].etag = NULL;
+#ifdef SIA_HUGE_FILES
+                                upload->part[i].tmpfn = NULL;
+#endif
                             }
                             opt.uploads = append_upload(&opt, upload);
                         }
@@ -283,6 +312,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 return -ENOMEM;
             }
         }
+**/
 #else
         char *upload_id = sia_bus_get_uploadid(&opt, path);
         off_t slot = offset / SIAFS_SMALL_FILE_SIZE + 1;
