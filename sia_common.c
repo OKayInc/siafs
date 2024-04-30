@@ -347,6 +347,38 @@ sia_metacache_t *add_meta(sia_cfg_t *opt, sia_metacache_t *meta){
     return opt->metacache;
 }
 #endif
+sia_upload_t *create_upload(sia_cfg_t *opt, const char *path, const char *upload_id){
+    sia_upload_t *upload = NULL;
+    if ((path != NULL) && (upload_id != NULL)){
+        upload = malloc(sizeof(sia_upload_t));
+        if (upload == NULL){
+            return NULL;
+        }
+        upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+        if (upload->name == NULL){
+            free(upload);
+            upload = NULL;
+            return NULL;
+        }
+        strcpy(upload->name, path);
+        upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+        if (upload->uploadID == NULL){
+            free(upload->name);
+            upload->name = NULL;
+            free(upload);
+            upload = NULL;
+            return NULL;
+        }
+        strcpy(upload->uploadID, upload_id);
+        for (int i = 0; i < SIA_MAX_PARTS; i++){
+            upload->part[i].etag = NULL;
+#ifdef SIA_HUGE_FILES
+            upload->part[i].tmpfn = NULL;
+#endif
+        }
+    }
+    return upload;
+}
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload){
     sia_upload_t *current = NULL;
     if (upload != NULL){

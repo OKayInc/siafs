@@ -72,7 +72,7 @@ IF (WITH_MEMCACHED)
     target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
 ENDIF (WITH_MEMCACHED)
 
-option(WITH_HUGEFILES "Enable support for Huge files" OFF)
+option(WITH_HUGEFILES "Enable support for Huge files" ON)
 IF (WITH_HUGEFILES)
     MESSAGE("Huge files support enabled.")
     add_definitions(-DSIA_HUGE_FILES)

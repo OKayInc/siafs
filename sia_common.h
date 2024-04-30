@@ -121,6 +121,7 @@ sia_metacache_t *update_meta(sia_cfg_t *opt, sia_metacache_t *src, sia_metacache
 sia_metacache_t *add_meta(sia_cfg_t *opt, sia_metacache_t *meta);
 #endif
 
+sia_upload_t *create_upload(sia_cfg_t *opt, const char *path, const char *upload_id);
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload);
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path);
