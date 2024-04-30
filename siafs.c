@@ -206,31 +206,30 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         }
         else{
             // Finde the upload node
-            upload = find_upload_by_path(opt, path)
+            upload = find_upload_by_path(&opt, path);
             if (upload == NULL){
                 return -ENOENT;
             }
         }
-        unsigned short int slot = 0;
-        char tmpfn[L_tmpnam+1] = {0};
+        char tmpfn[L_tmpnam] = {0};
         unsigned int slot = offset / (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
         if (offset % (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART)){
             // Each SIAFS_BLOCKS_PER_MULTIPART, including 0 we create a new tmp file
-            tmpfn = tmpnam(tmpfn);
+            tmpnam(tmpfn);
         }
         else{
             // Temporal filename
-            strcpy(tmpfn, upload.part[slot].tmpfn);
+            strcpy(tmpfn, upload->part[slot].tmpfn);
         }
         FILE *f = fopen("file.bin","ab");
         if (f == NULL){
             return -EIO;
         }
         fseek(f, 0, SEEK_END);
-        fwrite(f, sizeof(unsigned char), size, buf);
+        fwrite(buf,sizeof(unsigned char), size, f);
         fclose(f);
 
-        if (offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES{
+        if (offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES){
             // This is the last iteration before switching
             // Push the multipart
         }
