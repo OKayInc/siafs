@@ -196,6 +196,7 @@ char *sia_worker_put_multipart_from_file(sia_cfg_t *opt, const char *path, const
                 sprintf(cl, "Content-Length: %lu", size);
                 headers = curl_slist_append(headers, cl);
 //                headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
+                headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 //                headers = curl_slist_append(headers, "Expect:");
                 curl_easy_setopt(curl, CURLOPT_INFILESIZE, (curl_off_t)size);
                 curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)size);
