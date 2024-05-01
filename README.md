@@ -14,6 +14,7 @@ The following has been tested:
 * Rewriting on pre-existing files.
 * Renaming files and directories.
 * Mount wrappers.
+* L1 Memcached cache.
 
 ## Installing
 siafs uses `CMake`.
@@ -56,18 +57,18 @@ Type:
 Daemon won't fork and a lot of debug info will be displayed.
 
 ## Known Issues
-* Extremelly slow for now. Needs caching and optimization review. The first release will focus on the logic only.
+* Somehow slow for now. Needs L2 caching and optimization review. The first release will focus on the logic only.
 * Performance issues when writting big files with libfuse 2.9.x due to lack of the big_write feature. This doesn't happen with libfuse 3+.
 
 ## TODO
-* Caching.
+* L2 Cache.
 * Test under diferent conditions.
 
 ## Limitations
 The following limitations are due the SIA RenterD api.
 * No extended attributes.
 * No partial writting operations.
-* Filesize limitation due to a combination of Renterd multipart limitation (10,000 parts) and a libfuse fixed bufer size (4kb for libfuse2, 128kb for libfuse3). For libfuse 3, maximum filesize is 1.2GB; for libfuse 2, maximum filesize is 40MB.
+* Filesize limitation due to a combination of Renterd multipart limitation (10,000 parts) and a libfuse fixed bufer size (4kb for libfuse2, 128kb for libfuse3). For libfuse 3, maximum filesize is 1.2GB; for libfuse 2, maximum filesize is 40MB. (working on this)
 
 ## More Information
 (not yet)
