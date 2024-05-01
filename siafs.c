@@ -196,6 +196,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     }
     else{
 #ifdef SIA_HUGE_FILES
+        #warning SIA_HUGE_FILES defined
         char *upload_id = sia_bus_get_uploadid(&opt, path);
         if(opt.verbose){
             fprintf(stderr, "%s:%d Upload ID: %s\n", __FILE_NAME__, __LINE__, upload_id);
