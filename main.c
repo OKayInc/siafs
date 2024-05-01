@@ -66,6 +66,7 @@ struct fuse_operations operations = {
     .rmdir      = siafs_rmdir,
     .rename     = siafs_rename,
     .statfs     = sias_statfs,
+    .access     = siafs_access,
 };
 
 int parse_url(const char *url){

@@ -85,7 +85,6 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
             curl_easy_cleanup(curl);
         }
     }
-    fprintf(stderr, "abcedefgh\n");
     free(final_url);
 #ifdef SIA_MEMCACHED
     if (key != NULL){

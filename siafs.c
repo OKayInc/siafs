@@ -181,6 +181,8 @@ int siafs_mknod(const char *path, mode_t mode, dev_t rdev){
         fprintf(stderr, "%s:%d %s(\"%s\", %d, %lu)\n", __FILE_NAME__, __LINE__, __func__, path, mode, rdev);
     }
     sia_worker_put_object(&opt, path, 0, 0, NULL);
+    struct fuse_file_info *info;
+    siafs_flush(path, info);
     return 0;
 }
 
@@ -195,6 +197,9 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
     else{
 #ifdef SIA_HUGE_FILES
         char *upload_id = sia_bus_get_uploadid(&opt, path);
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d Upload ID: %s\n", __FILE_NAME__, __LINE__, upload_id);
+        }
         sia_upload_t *upload = NULL;
         if (offset == 0){
             // Create the upload node
@@ -213,15 +218,26 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         }
         char tmpfn[L_tmpnam] = {0};
         unsigned int slot = offset / (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
-        if (offset % (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART)){
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d Slot: %u\n", __FILE_NAME__, __LINE__, slot);
+        }
+        if (offset % (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART) == 0){
             // Each SIAFS_BLOCKS_PER_MULTIPART, including 0 we create a new tmp file
             tmpnam(tmpfn);
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d New TmpFN: %s\n", __FILE_NAME__, __LINE__, tmpfn);
+            }
+            upload->part[slot].tmpfn = malloc(sizeof(char) * strlen(tmpfn) + 1);
+            strcpy(upload->part[slot].tmpfn, tmpfn);
         }
         else{
             // Temporal filename
             strcpy(tmpfn, upload->part[slot].tmpfn);
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d Recovered TmpFN: %s\n", __FILE_NAME__, __LINE__, tmpfn);
+            }
         }
-        FILE *f = fopen("file.bin","ab");
+        FILE *f = fopen(tmpfn,"ab");
         if (f == NULL){
             return -EIO;
         }
@@ -229,8 +245,58 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         fwrite(buf,sizeof(unsigned char), size, f);
         fclose(f);
 
-        if (offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES){
+        if ((offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES) ||
+            (offset > 0 && size < SIAFS_SMALL_FILE_SIZE_BYTES)){
             // This is the last iteration before switching
+            off_t slot = offset / (SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
+            if(opt.verbose){
+                fprintf(stderr, "%s:%d Last iteration.\n", __FILE_NAME__, __LINE__);
+                fprintf(stderr, "%s:%d Slot: %d\n", __FILE_NAME__, __LINE__, slot);
+            }
+
+            char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, size, offset, (void *)tmpfn, slot);
+            if (etag != NULL){
+                sia_upload_t *upload;
+
+                if (offset == 0){
+                    upload = malloc(sizeof(sia_upload_t));
+                    if (upload == NULL){
+                        return -ENOMEM;
+                    }
+                    upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+                    if (upload->name == NULL){
+                        return -ENOMEM;
+                    }
+                    strcpy(upload->name, path);
+                    upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+                    if (upload->uploadID == NULL){
+                        return -ENOMEM;
+                    }
+                    strcpy(upload->uploadID, upload_id);
+                    for (int i = 0; i < SIA_MAX_PARTS; i++){
+                        upload->part[i].etag = NULL;
+                        upload->part[i].tmpfn = NULL;
+                    }
+                    opt.uploads = append_upload(&opt, upload);
+                }
+                else{
+                    upload = find_upload_by_path(&opt, path);
+                }
+                off_t slot = offset / SIAFS_SMALL_FILE_SIZE_BYTES;
+                upload->part[slot].etag = etag;
+                if(opt.verbose){
+                    fprintf(stderr, "%s:%d Upload Name: %s uploadID: %s\n", __FILE_NAME__, __LINE__, upload->name, upload->uploadID);
+                    fprintf(stderr, "%s:%d Slot: %ld eTag: %s\n", __FILE_NAME__, __LINE__, slot, upload->part[slot].etag);
+                }
+
+                for (int i = 0; (i <= slot); i++){
+                    fprintf(stderr, "%s:%d\t%d: %s\n", __FILE_NAME__, __LINE__, i, upload->part[i].etag);
+                }
+            }
+            else{
+                return 0;
+            }
+
             // Push the multipart
         }
 /**
@@ -594,3 +660,20 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
 
    return NULL;
 }
+
+int siafs_access(const char *path, int mask){
+    if(opt.verbose){
+        fprintf(stderr, "%s(\"%s\", %d)\n", __func__, path, mask);
+    }
+	struct stat s;
+
+#if FUSE_USE_VERSION < 30
+	if (siafs_getattr(path, &s) != 0)
+#else
+	if (siafs_getattr(path, &s, NULL) != 0)
+#endif
+        return(-ENOENT);
+
+    return 0;
+}
+

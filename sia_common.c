@@ -348,20 +348,24 @@ sia_metacache_t *add_meta(sia_cfg_t *opt, sia_metacache_t *meta){
 }
 #endif
 sia_upload_t *create_upload(sia_cfg_t *opt, const char *path, const char *upload_id){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, path, upload_id);
+    }
+
     sia_upload_t *upload = NULL;
     if ((path != NULL) && (upload_id != NULL)){
         upload = malloc(sizeof(sia_upload_t));
         if (upload == NULL){
             return NULL;
         }
-        upload->name = malloc(sizeof(const char) * strlen(path) + 1);
+        upload->name = malloc(sizeof(char) * strlen(path) + 1);
         if (upload->name == NULL){
             free(upload);
             upload = NULL;
             return NULL;
         }
         strcpy(upload->name, path);
-        upload->uploadID = malloc(sizeof(upload->uploadID ) * strlen(upload_id) + 1);
+        upload->uploadID = malloc(sizeof(char) * strlen(upload_id) + 1);
         if (upload->uploadID == NULL){
             free(upload->name);
             upload->name = NULL;
@@ -380,6 +384,9 @@ sia_upload_t *create_upload(sia_cfg_t *opt, const char *path, const char *upload
     return upload;
 }
 sia_upload_t *append_upload(sia_cfg_t *opt, sia_upload_t *upload){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, "(opt)", "(upload)");
+    }
     sia_upload_t *current = NULL;
     if (upload != NULL){
         if (opt->uploads != NULL){
@@ -437,9 +444,12 @@ sia_upload_t *del_upload(sia_cfg_t *opt, sia_upload_t *upload){
 }
 
 sia_upload_t *find_upload_by_path(sia_cfg_t *opt, const char *path){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\")\n", __FILE_NAME__, __LINE__, __func__, path);
+    }
     sia_upload_t *current = opt->uploads;
     if ((path != NULL) && (current != NULL)){
-        while (strcmp(current->name, path) && current->next){
+        while (current && strcmp(current->name, path)){
             current = current->next;
         }
 

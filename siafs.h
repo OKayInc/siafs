@@ -66,6 +66,7 @@ int siafs_setxattr(const char *path, const char *key, const char *val, size_t sz
 #endif
 int siafs_unlink(const char *path);
 int siafs_rmdir(const char *path);
+int siafs_access(const char *path, int mask);
 
 #if FUSE_USE_VERSION < 30
 #warning FUSE_USE_VERSION < 30
