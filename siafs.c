@@ -242,9 +242,19 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         if (f == NULL){
             return -EIO;
         }
+        unsigned long file_size = 0;
         fseek(f, 0, SEEK_END);
         fwrite(buf,sizeof(unsigned char), size, f);
         fclose(f);
+
+        struct stat fistat;
+        stat(tmpfn, &fistat);
+        off_t fsize = fistat.st_size;
+
+
+        if(opt.verbose){
+            fprintf(stderr, "%s:%d File Size: %u.\n", __FILE_NAME__, __LINE__, fsize);
+        }
 
         if ((offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES) ||
             (offset > 0 && size < SIAFS_SMALL_FILE_SIZE_BYTES)){
@@ -255,7 +265,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 fprintf(stderr, "%s:%d Slot: %d\n", __FILE_NAME__, __LINE__, slot);
             }
 
-            char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, size, offset, (void *)tmpfn, slot + 1);
+            char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, fsize, offset, (void *)tmpfn, slot + 1);
             if (etag != NULL){
                 sia_upload_t *upload;
 

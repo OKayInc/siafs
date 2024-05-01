@@ -3,6 +3,9 @@
 
 #define __USE_GNU
 #define _XOPEN_SOURCE
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <errno.h>
 #if FUSE_USE_VERSION < 30
 #include <fuse.h>
