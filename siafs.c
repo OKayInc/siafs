@@ -254,7 +254,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 fprintf(stderr, "%s:%d Slot: %d\n", __FILE_NAME__, __LINE__, slot);
             }
 
-            char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, size, offset, (void *)tmpfn, slot);
+            char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, size, offset, (void *)tmpfn, slot + 1);
             if (etag != NULL){
                 sia_upload_t *upload;
 
@@ -282,7 +282,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 else{
                     upload = find_upload_by_path(&opt, path);
                 }
-                off_t slot = offset / SIAFS_SMALL_FILE_SIZE_BYTES;
+//                off_t slot = offset / SIAFS_SMALL_FILE_SIZE_BYTES;
                 upload->part[slot].etag = etag;
                 if(opt.verbose){
                     fprintf(stderr, "%s:%d Upload Name: %s uploadID: %s\n", __FILE_NAME__, __LINE__, upload->name, upload->uploadID);
@@ -438,14 +438,11 @@ int siafs_release(const char *path, struct fuse_file_info *info){
     }
 
     if (sia_bus_objects_is_file(&opt, path) || (sia_bus_object_size(&opt, path) == 0)){
-#ifdef SIA_HUGE_FILES
-#else
         // the file is zero bytesthen it might a multipart write op
         sia_upload_t *upload = find_upload_by_path(&opt, path);
         if (upload != NULL){
             char *etag = sia_bus_multipart_complete_json(&opt, path, upload->uploadID);
         }
-#endif
     }
     return 0;
 }

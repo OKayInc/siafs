@@ -196,9 +196,8 @@ char *sia_worker_put_multipart_from_file(sia_cfg_t *opt, const char *path, const
                 sprintf(cl, "Content-Length: %lu", size);
                 headers = curl_slist_append(headers, cl);
                 headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
-    //            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ctx);
-    //           curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, size);
-                curl_easy_setopt(curl, CURLOPT_READDATA, f);
+                curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+                curl_easy_setopt(curl, CURLOPT_READDATA, (void *)f);
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             res = curl_easy_perform(curl);
