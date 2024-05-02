@@ -264,7 +264,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 fprintf(stderr, "%s:%d Last iteration.\n", __FILE_NAME__, __LINE__);
                 fprintf(stderr, "%s:%d Slot: %d\n", __FILE_NAME__, __LINE__, slot);
             }
-
+            // Push the multipart
             char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, fsize, offset, (void *)tmpfn, slot + 1);
             if (etag != NULL){
                 sia_upload_t *upload;
@@ -305,10 +305,8 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 }
             }
             else{
-                return 0;
+                return -EIO;
             }
-
-            // Push the multipart
         }
 /**
         cJSON *file = push_file(&opt, path);

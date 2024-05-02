@@ -106,6 +106,7 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
 //            if (headers != NULL){
 //                curl_slist_free_all(headers);
 //            }
+            curl_easy_cleanup(curl);
         }
 
         payload = http_payload.data;
@@ -114,7 +115,6 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
         }
         //sia_set_to_cache(final_url, http_payload.data);
 
-        curl_easy_cleanup(curl);
         free(final_url);
         free(path2);
         final_url = NULL;
@@ -208,39 +208,48 @@ char *sia_worker_put_multipart_from_file(sia_cfg_t *opt, const char *path, const
                 curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)size);
                 curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
                 curl_easy_setopt(curl, CURLOPT_READDATA, (void *)f);
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             res = curl_easy_perform(curl);
+            long response_code;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d HTTP RESPONSE CODE: %lu\n", __FILE_NAME__, __LINE__, response_code);
+            }
             if(res != CURLE_OK){
                 fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            }            struct curl_header *header;
-            CURLHcode h;
-            h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
-            if (header->value[strlen(header->value) - 1] == '"'){
-                header->value[strlen(header->value) - 1] = '\0';
             }
-            if (header->value[0] == '"'){
-                memmove(header->value, header->value + 1, strlen(header->value));
-            }
-            if(opt->verbose){
-                fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
-                fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
-            }
-            if (h == CURLHE_OK){
-                http_h_payload.data = malloc((sizeof(char) * strlen(header->value) + 1));
-                strcpy(http_h_payload.data, header->value);
-                http_h_payload.len = strlen(header->value);
-                payload = http_h_payload.data;
-            }
-            if (headers != NULL){
-                curl_slist_free_all(headers);
+            if (response_code < 300){
+                struct curl_header *header;
+                CURLHcode h;
+                h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
+                if (header->value[strlen(header->value) - 1] == '"'){
+                    header->value[strlen(header->value) - 1] = '\0';
+                }
+                if (header->value[0] == '"'){
+                    memmove(header->value, header->value + 1, strlen(header->value));
+                }
+                if(opt->verbose){
+                    fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                    fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                }
+                if (h == CURLHE_OK){
+                    http_h_payload.data = malloc((sizeof(char) * strlen(header->value) + 1));
+                    strcpy(http_h_payload.data, header->value);
+                    http_h_payload.len = strlen(header->value);
+                    payload = http_h_payload.data;
+                }
+                if (headers != NULL){
+                    curl_slist_free_all(headers);
+                }
             }
         }
         fclose(f);
+        curl_easy_cleanup(curl);
     }
     //sia_set_to_cache(final_url, http_payload.data);
 
-    curl_easy_cleanup(curl);
     free(final_url);
     final_url = NULL;
 
@@ -354,10 +363,10 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
         if (headers != NULL){
             curl_slist_free_all(headers);
         }
+        curl_easy_cleanup(curl);
     }
     //sia_set_to_cache(final_url, http_payload.data);
 
-    curl_easy_cleanup(curl);
     free(final_url);
     final_url = NULL;
 
@@ -469,10 +478,10 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             if (headers != NULL){
                 curl_slist_free_all(headers);
             }
+            curl_easy_cleanup(curl);
         }
         //sia_set_to_cache(final_url, http_payload.data);
 
-        curl_easy_cleanup(curl);
         free(final_url);
         final_url = NULL;
 //    }
