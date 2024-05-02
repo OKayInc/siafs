@@ -128,6 +128,9 @@ char *sia_bus_multipart_abort_json(sia_cfg_t *opt, const char *path, const char 
             }
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             free(post_data);
         }
 
@@ -288,6 +291,9 @@ char *sia_bus_multipart_complete_json(sia_cfg_t *opt, const char *path, const ch
             char *post_data = sia_bus_multipart_complete_create_json_payload(opt, path, uploadid);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             if (post_data){
                 free(post_data);
             }
@@ -353,6 +359,9 @@ char *sia_bus_multipart_create_json(sia_cfg_t *opt, const char *path, const char
             sprintf(post_data, post_data_format, opt->bucket, key, path);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             free(post_data);
         }
 
@@ -416,6 +425,9 @@ char *sia_bus_multipart_listparts_json(sia_cfg_t *opt, const char *path, const c
             sprintf(post_data, post_data_format, opt->bucket, path, uploadid);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             free(post_data);
         }
 
@@ -479,6 +491,9 @@ char *sia_bus_multipart_listuploads_json(sia_cfg_t *opt, const char *path){
             sprintf(post_data, post_data_format, opt->bucket, path);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             free(post_data);
         }
 

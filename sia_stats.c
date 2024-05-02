@@ -61,7 +61,9 @@ char *sia_stats_json(sia_cfg_t *opt){
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
 //            curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
-
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             if(opt->verbose){
                 fprintf(stderr, "%s:%d %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)http_payload.data);
             }

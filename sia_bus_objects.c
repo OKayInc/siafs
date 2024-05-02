@@ -87,7 +87,9 @@ char *sia_bus_objects_json(sia_cfg_t *opt, const char *path){
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
-
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             if(opt->verbose){
                 fprintf(stderr, "%s:%d %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, (char *)http_payload.data);
             }
@@ -183,6 +185,9 @@ char *sia_bus_objects_list_json(sia_cfg_t *opt, const char *path){
             sprintf(post_data, post_data_format, opt->bucket, path);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             free(post_data);
 
             if(opt->verbose){
@@ -659,6 +664,9 @@ char *sia_bus_del_object(sia_cfg_t *opt, const char *path){
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
         }
 
         if(opt->verbose){
@@ -722,6 +730,9 @@ char *sia_bus_rename_object(sia_cfg_t *opt, const char *from, const char *to, co
             sprintf(post_data, post_data_format, opt->bucket, from, to, mode);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
         }
 
         if(opt->verbose){

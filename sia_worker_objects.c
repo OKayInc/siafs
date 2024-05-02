@@ -80,6 +80,9 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             struct curl_header *header;
             CURLHcode h;
             h = curl_easy_header(curl, "Content-Length", 0, CURLH_HEADER, -1, &header);
@@ -96,6 +99,9 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             if (h == CURLHE_OK){
                 char *ptr;
                 *payload_size = strtol(header->value, &ptr, 10);
+            }
+            else{
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(h));
             }
 //            if (headers != NULL){
 //                curl_slist_free_all(headers);
@@ -205,7 +211,9 @@ char *sia_worker_put_multipart_from_file(sia_cfg_t *opt, const char *path, const
             }
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             res = curl_easy_perform(curl);
-            struct curl_header *header;
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }            struct curl_header *header;
             CURLHcode h;
             h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
             if (header->value[strlen(header->value) - 1] == '"'){
@@ -321,6 +329,9 @@ char *sia_worker_put_multipart(sia_cfg_t *opt, const char *path, const char *upl
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         res = curl_easy_perform(curl);
+        if(res != CURLE_OK){
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
         struct curl_header *header;
         CURLHcode h;
         h = curl_easy_header(curl, "ETag", 0, CURLH_HEADER, -1, &header);
@@ -452,6 +463,9 @@ char *sia_worker_put_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             payload = ctx;
             res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             if (headers != NULL){
                 curl_slist_free_all(headers);
             }

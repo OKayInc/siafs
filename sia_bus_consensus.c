@@ -64,7 +64,9 @@ char *sia_bus_consensus_state_json(sia_cfg_t *opt){
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
             res = curl_easy_perform(curl);
-
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
             if(opt->verbose){
                 fprintf(stderr, "%s:%d payload: %s\n", __FILE_NAME__, __LINE__, (char *)http_payload.data);
             }
