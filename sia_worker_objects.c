@@ -182,6 +182,10 @@ char *sia_worker_put_multipart_from_file(sia_cfg_t *opt, const char *path, const
     FILE *f = fopen(fn, "rb");
     if (f){
         if(curl) {
+            curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 102400L);
+            curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_2TLS);
+            curl_easy_setopt(curl, CURLOPT_FTP_SKIP_PASV_IP, 1L);
+            curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
             curl_easy_setopt(curl, CURLOPT_URL, final_url);
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);

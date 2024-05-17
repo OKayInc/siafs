@@ -92,8 +92,8 @@ typedef struct{
 #ifdef SIA_METACACHE
     sia_metacache_t *metacache;
 #endif
-    sia_cache_t *L1;
-    sia_cache_t *L2;
+    sia_cache_t *L1;    // L1 Cache should be a meta cache
+    sia_cache_t *L2;    // L2 Cache should be a data cache
 #ifdef SIA_MEMCACHED
     memcached_server_st *servers;
     memcached_st *memc;
@@ -101,6 +101,7 @@ typedef struct{
     cJSON *payload_buffer;
 }sia_cfg_t;
 
+char *append(const char before, char *str, const char after);
 char *b64cat(unsigned int n, ...);
 time_t string2unixtime(char *timestamp);
 cJSON *push_file(sia_cfg_t *opt, const char *path);

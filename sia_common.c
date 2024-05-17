@@ -12,6 +12,19 @@ sia_payload_t sia_cache = {
     .time = 0
 };
 
+char *append(const char before, char *str, const char after){
+    size_t len = strlen(str);
+    if(before) {
+        memmove(str + 1, str, ++len);
+        *str = before;
+    }
+    if(after){
+        str[len] = after;
+        str[len + 1] = 0;
+    }
+    return str;
+}
+
 char *b64cat(unsigned int n, ...){
     char *b64 = NULL;
     if (n > 0){

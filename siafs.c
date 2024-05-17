@@ -217,14 +217,17 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
                 return -ENOENT;
             }
         }
-        char tmpfn[L_tmpnam] = {0};
-        unsigned int slot = offset / (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
+        char tmpfn[L_tmpnam+6] = {0};
+        off_t slot = offset / (SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
         if(opt.verbose){
-            fprintf(stderr, "%s:%d Slot: %u\n", __FILE_NAME__, __LINE__, slot);
+            fprintf(stderr, "%s:%d Slot: %lu\n", __FILE_NAME__, __LINE__, slot);
         }
         if (offset % (unsigned int)(SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART) == 0){
             // Each SIAFS_BLOCKS_PER_MULTIPART, including 0 we create a new tmp file
             tmpnam(tmpfn);
+            char ss[7] = {0};
+            sprintf(ss, ".%lu", slot);
+            strcat(tmpfn,ss);
             if(opt.verbose){
                 fprintf(stderr, "%s:%d New TmpFN: %s\n", __FILE_NAME__, __LINE__, tmpfn);
             }
@@ -240,6 +243,7 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         }
         FILE *f = fopen(tmpfn,"ab");
         if (f == NULL){
+            fprintf(stderr, "%s:%d Couldn't open %s\n", __FILE_NAME__, __LINE__, tmpfn);
             return -EIO;
         }
         unsigned long file_size = 0;
@@ -251,18 +255,27 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
         stat(tmpfn, &fistat);
         off_t fsize = fistat.st_size;
 
-
         if(opt.verbose){
-            fprintf(stderr, "%s:%d File Size: %u.\n", __FILE_NAME__, __LINE__, fsize);
+            fprintf(stderr, "%s:%d File Size: %lu.\n", __FILE_NAME__, __LINE__, fsize);
+            fprintf(stderr, "%s:%d Offset: %lu.\n", __FILE_NAME__, __LINE__, offset);
+            fprintf(stderr, "%s:%d offset %% (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) [%lu] >= SIAFS_SMALL_FILE_SIZE_BYTES*(SAIFS_WRITES_PER_MULTIPART-1) [%lu]\n",
+                    __FILE_NAME__, __LINE__, offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART), (off_t)SIAFS_SMALL_FILE_SIZE_BYTES*(SAIFS_WRITES_PER_MULTIPART-1));
         }
 
-        if ((offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) <= SIAFS_SMALL_FILE_SIZE_BYTES) ||
-            (offset > 0 && size < SIAFS_SMALL_FILE_SIZE_BYTES)){
+        unsigned short int last = 0;
+        if (offset % (SIAFS_SMALL_FILE_SIZE_BYTES*SAIFS_WRITES_PER_MULTIPART) >= SIAFS_SMALL_FILE_SIZE_BYTES*(SAIFS_WRITES_PER_MULTIPART - 1))
+            last = 1;
+
+        if (offset > 0 && size < SIAFS_SMALL_FILE_SIZE_BYTES)
+            last = 2;
+
+        if (last > 0){
             // This is the last iteration before switching
-            off_t slot = offset / (SIAFS_SMALL_FILE_SIZE_BYTES * SAIFS_WRITES_PER_MULTIPART);
+
             if(opt.verbose){
                 fprintf(stderr, "%s:%d Last iteration.\n", __FILE_NAME__, __LINE__);
-                fprintf(stderr, "%s:%d Slot: %d\n", __FILE_NAME__, __LINE__, slot);
+                fprintf(stderr, "%s:%d Condition: %d\n", __FILE_NAME__, __LINE__, last);
+                fprintf(stderr, "%s:%d Slot: %lu\n", __FILE_NAME__, __LINE__, slot);
             }
             // Push the multipart
             char *etag = sia_worker_put_multipart_from_file(&opt, path, upload_id, fsize, offset, (void *)tmpfn, slot + 1);
@@ -302,6 +315,12 @@ int siafs_write(const char *path, const char *buf, size_t size, off_t offset, st
 
                 for (int i = 0; (i <= slot); i++){
                     fprintf(stderr, "%s:%d\t%d: %s\n", __FILE_NAME__, __LINE__, i, upload->part[i].etag);
+                }
+                if(opt.verbose){
+                    fprintf(stderr, "%s:%d Not deleting file %s as we are debuging.\n", __FILE_NAME__, __LINE__, tmpfn);
+                }
+                else{
+                    unlink(tmpfn);
                 }
             }
             else{
@@ -450,6 +469,13 @@ int siafs_release(const char *path, struct fuse_file_info *info){
         // the file is zero bytesthen it might a multipart write op
         sia_upload_t *upload = find_upload_by_path(&opt, path);
         if (upload != NULL){
+            if (opt.verbose){
+                char *parts = sia_bus_multipart_listparts_json(&opt, path, upload->uploadID);
+                if (parts != NULL){
+                    fprintf(stderr, "%s:%d List parts: %s\n", __FILE_NAME__, __LINE__, parts);
+                    free(parts);
+                }
+            }
             char *etag = sia_bus_multipart_complete_json(&opt, path, upload->uploadID);
         }
     }
@@ -664,7 +690,11 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     cJSON *files = cJSON_CreateArray();
     cJSON_AddItemToObject(opt.payload_buffer, "files", files);
 
-   return NULL;
+    uid_t uid = fuse_get_context()->uid;
+    if(opt.verbose){
+        fprintf(stderr, "UID: %d\n", uid);
+    }
+    return NULL;
 }
 
 int siafs_access(const char *path, int mask){
