@@ -1,0 +1,431 @@
+curl -v -u :f1l3m0n3lgr4nd3 -X POST --data '{
+    "bucket": "default",
+    "key": "key:0000000000000000000000000000000000000000000000000000000000000000",
+    "path": "/foo",
+    "generatedKey": false }' http://127.0.0.1:9880/api/bus/multipart/create
+Note: Unnecessary use of -X or --request, POST is already inferred.
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> POST /api/bus/multipart/create HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Length: 157
+> Content-Type: application/x-www-form-urlencoded
+> 
+* upload completely sent off: 157 bytes
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Date: Wed, 15 May 2024 17:45:50 GMT
+< Content-Length: 84
+< 
+{
+        "uploadID": "0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05"
+}
+* Connection #0 to host 127.0.0.1 left intact
+
+
+
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=1' --data-binary "@/tmp/filetyvmg5.0"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=1 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "2ce721e8e81728463bfbf0b631cff07c"
+Etag: "2ce721e8e81728463bfbf0b631cff07c"
+< Date: Wed, 15 May 2024 18:05:32 GMT
+Date: Wed, 15 May 2024 18:05:32 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=2' --data-binary "@/tmp/fileEvKa3N.1"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=2 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "5c443bcb2d5cfc6669f9f24bcbb6370a"
+Etag: "5c443bcb2d5cfc6669f9f24bcbb6370a"
+< Date: Wed, 15 May 2024 18:37:43 GMT
+Date: Wed, 15 May 2024 18:37:43 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=3' --data-binary "@/tmp/fileDNEAJv.2"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=3 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "c59b58378eb71a2d754f93fc4373b363"
+Etag: "c59b58378eb71a2d754f93fc4373b363"
+< Date: Wed, 15 May 2024 18:48:56 GMT
+Date: Wed, 15 May 2024 18:48:56 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=4' --data-binary "@/tmp/filejV6CrM.3"  -H "Content-Type: application/octet-stream" --libcurl /tmp/mpart.c
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=4 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "9607cf6dd9e0e13f660d55dd32ffc66a"
+Etag: "9607cf6dd9e0e13f660d55dd32ffc66a"
+< Date: Wed, 15 May 2024 18:57:33 GMT
+Date: Wed, 15 May 2024 18:57:33 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+ curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=5' --data-binary "@/tmp/fileiyDdQ6.4"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=5 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "87843424c42827fc24fc133ab93b53f6"
+Etag: "87843424c42827fc24fc133ab93b53f6"
+< Date: Wed, 15 May 2024 19:09:07 GMT
+Date: Wed, 15 May 2024 19:09:07 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intac
+
+[dieu@andres build (main)]$ curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=6' --data-binary "@/tmp/fileHNY7D9.5"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=6 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "522c8d2756b17fe5a2a57796b3f1a438"
+Etag: "522c8d2756b17fe5a2a57796b3f1a438"
+< Date: Wed, 15 May 2024 19:45:21 GMT
+Date: Wed, 15 May 2024 19:45:21 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=7' --data-binary "@/tmp/file55xSra.6"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=7 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "7a00c3b4d86ca8ef2a310d8a75466682"
+Etag: "7a00c3b4d86ca8ef2a310d8a75466682"
+< Date: Wed, 15 May 2024 20:20:24 GMT
+Date: Wed, 15 May 2024 20:20:24 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=8' --data-binary "@/tmp/fileNUJUyt.7"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=8 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "5b96a467680f29e6ea9942095495b541"
+Etag: "5b96a467680f29e6ea9942095495b541"
+< Date: Thu, 16 May 2024 01:53:54 GMT
+Date: Thu, 16 May 2024 01:53:54 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=9' --data-binary "@/tmp/filevWekel.8"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=9 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 134217728
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 134217728 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "a3118ae7a3c893a4303816c6eb610e29"
+Etag: "a3118ae7a3c893a4303816c6eb610e29"
+< Date: Thu, 16 May 2024 02:37:53 GMT
+Date: Thu, 16 May 2024 02:37:53 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+ curl -v -i -u :f1l3m0n3lgr4nd3 -X PUT 'http://127.0.0.1:9880/api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=10' --data-binary "@/tmp/fileziejV4.9"  -H "Content-Type: application/octet-stream" 
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> PUT /api/worker/multipart/foo?bucket=default&uploadid=0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05&partnumber=10 HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/octet-stream
+> Content-Length: 23106626
+> Expect: 100-continue
+> 
+< HTTP/1.1 100 Continue
+HTTP/1.1 100 Continue
+< 
+
+* upload completely sent off: 23106626 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Etag: "5eb3f2a9d49569eafa88cb01213bf6dd"
+Etag: "5eb3f2a9d49569eafa88cb01213bf6dd"
+< Date: Fri, 17 May 2024 12:25:41 GMT
+Date: Fri, 17 May 2024 12:25:41 GMT
+< Content-Length: 0
+Content-Length: 0
+< 
+
+* Connection #0 to host 127.0.0.1 left intact
+
+curl -v -i -u :f1l3m0n3lgr4nd3  'http://127.0.0.1:9880/api/bus/multipart/listparts' --data '{  "bucket": "default",                                                                   
+  "path": "/foo",
+  "uploadID": "0477c079851130f86e7fe50196545dadb6fd5a219202d498f0c2e4e9beb17c05",
+  "partNumberMarker": 0,
+  "limit": -1
+}'
+*   Trying 127.0.0.1:9880...
+* Connected to 127.0.0.1 (127.0.0.1) port 9880
+* Server auth using Basic with user ''
+> POST /api/bus/multipart/listparts HTTP/1.1
+> Host: 127.0.0.1:9880
+> Authorization: Basic OmYxbDNtMG4zbGdyNG5kMw==
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Length: 165
+> Content-Type: application/x-www-form-urlencoded
+> 
+* upload completely sent off: 165 bytes
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< Content-Type: application/json
+Content-Type: application/json
+< Date: Fri, 17 May 2024 12:26:08 GMT
+Date: Fri, 17 May 2024 12:26:08 GMT
+< Content-Length: 1555
+Content-Length: 1555
+< 
+
+{
+        "hasMore": false,
+        "nextMarker": 0,
+        "parts": [
+                {
+                        "partNumber": 1,
+                        "lastModified": "2024-05-15T18:05:32.052462506Z",
+                        "eTag": "2ce721e8e81728463bfbf0b631cff07c",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 2,
+                        "lastModified": "2024-05-15T18:37:43.337661455Z",
+                        "eTag": "5c443bcb2d5cfc6669f9f24bcbb6370a",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 3,
+                        "lastModified": "2024-05-15T18:48:56.870768032Z",
+                        "eTag": "c59b58378eb71a2d754f93fc4373b363",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 4,
+                        "lastModified": "2024-05-15T18:57:33.345694144Z",
+                        "eTag": "9607cf6dd9e0e13f660d55dd32ffc66a",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 5,
+                        "lastModified": "2024-05-15T19:09:07.810260999Z",
+                        "eTag": "87843424c42827fc24fc133ab93b53f6",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 6,
+                        "lastModified": "2024-05-15T19:45:21.073926985Z",
+                        "eTag": "522c8d2756b17fe5a2a57796b3f1a438",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 7,
+                        "lastModified": "2024-05-15T20:20:24.206684671Z",
+                        "eTag": "7a00c3b4d86ca8ef2a310d8a75466682",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 8,
+                        "lastModified": "2024-05-16T01:53:54.412230979Z",
+                        "eTag": "5b96a467680f29e6ea9942095495b541",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 9,
+                        "lastModified": "2024-05-16T02:37:53.010867648Z",
+                        "eTag": "a3118ae7a3c893a4303816c6eb610e29",
+                        "size": 134217728
+                },
+                {
+                        "partNumber": 10,
+                        "lastModified": "2024-05-17T12:25:40.936434041Z",
+                        "eTag": "5eb3f2a9d49569eafa88cb01213bf6dd",
+                        "size": 23106626
+                }
+        ]
+}
+* Connection #0 to host 127.0.0.1 left intact
+
