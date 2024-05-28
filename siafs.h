@@ -51,6 +51,7 @@
 #define KB_IN_GB				1048576
 
 #include "sia.h"
+#include "homedir.h"
 
 char *sia_concensus_state(sia_cfg_t *opt);
 

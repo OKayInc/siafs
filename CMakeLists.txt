@@ -17,6 +17,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 add_executable(siafs
     base64.h
     base64.c
+    disk_cache.h
+    disk_cache.c
+    homedir.h
+    homedir.c
     main.c
     md5.h
     md5.c
@@ -67,10 +71,17 @@ IF (WITH_MEMCACHED)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBMEMCACHED REQUIRED IMPORTED_TARGET libmemcached)
     IF(${LIBMEMCACHED_FOUND})
+        MESSAGE("Memcached support enabled.")
         add_definitions(-DSIA_MEMCACHED)
     ENDIF(${LIBMEMCACHED_FOUND})
     target_link_libraries(siafs PUBLIC ${LIBMEMCACHED_LIBRARIES})
 ENDIF (WITH_MEMCACHED)
+
+option(WITH_DISKCACHE "Enable support for Disk Caching" ON)
+IF (WITH_DISKCACHE)
+    MESSAGE("Disk cache support enabled.")
+    add_definitions(-DSIA_DISK_CACHE)
+ENDIF (WITH_DISKCACHE)
 
 option(WITH_HUGEFILES "Enable support for Huge files" ON)
 IF (WITH_HUGEFILES)

@@ -5,27 +5,22 @@ extern "C"
 
 #include "disk_cache.h"
 
-char *disk_key(const char *endpoint, const char *path, const char* extra){
+char *disk_key(const char *path, const size_t size, const off_t offset){
     char *shash = NULL;
-    if ((endpoint != NULL) && (path != NULL)){
+    if (path != NULL){
         char *k = NULL;
-        // key: [extra::]endpoint::path
-        int kl = strlen(endpoint) + strlen(path) + 3;
-        if (extra != NULL){
-            kl += strlen(extra) + 3;
-        }
+        char s_size[256] = {0};
+        char s_offset[256] = {0};
+        sprintf(s_size, "%lu", size);
+        sprintf(s_offset, "%lu", offset);
+        unsigned int kl = strlen(path) + strlen(s_size) + strlen(s_offset) + 5;
         k = (char *)calloc(kl, sizeof(char));
         if (k != NULL){
-            if (extra != NULL){
-                strcpy(k,extra);
-                strcat(k,"::");
-                strcat(k, endpoint);
-            }
-            else{
-                strcpy(k,endpoint);
-            }
+            strcpy(k, path);
             strcat(k,"::");
-            strcat(k,path);
+            strcat(k,s_size);
+            strcat(k,"::");
+            strcat(k,s_offset);
 
             uint8_t hash[16];
             shash = calloc(33, sizeof(char));
@@ -46,18 +41,14 @@ char *disk_key(const char *endpoint, const char *path, const char* extra){
     return shash;
 }
 
-unsigned int disk_init(void **memc, void **servers){
-    memcached_st **memc2 = (memcached_st**)memc;
-    memcached_server_st **servers2 = (memcached_server_st**)servers;
-    memcached_return_t rc;
+int disk_init(const char *cache_dir){
+    int status = 0;
+    struct stat st = {0};
+    if (stat(cache_dir, &st) == -1) {
+        status = mkdir(cache_dir, 0700);
+    }
 
-    *memc2 = memcached_create(NULL);
-    *servers2 = memcached_server_list_append(*servers2, MEMCACHED_HOST, MEMCACHED_DEFAULT_PORT, &rc);
-    rc = memcached_server_push(*memc2, *servers2);
-    if (rc != MEMCACHED_SUCCESS)
-        fprintf(stderr, "Couldn't init: %s\n", memcached_strerror(*memc2, rc));
-
-    return (unsigned int)rc;
+    return status;
 }
 
 unsigned int disk_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration){

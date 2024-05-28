@@ -690,10 +690,38 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     cJSON *files = cJSON_CreateArray();
     cJSON_AddItemToObject(opt.payload_buffer, "files", files);
 
-    uid_t uid = fuse_get_context()->uid;
-    if(opt.verbose){
-        fprintf(stderr, "UID: %d\n", uid);
+#ifdef SIA_DISK_CACHE
+    uid_t uid2 = getuid();
+
+    if (uid2 > 0){
+        char *homedir = get_homedir();
+        // ~/.cache/siafs/
+        opt.cache_dir = calloc(strlen(homedir) + 15, sizeof(char));
+        strcpy(opt.cache_dir, homedir);
+        strcat(opt.cache_dir, "/.cache/siafs/");
+        free(homedir);
     }
+    else{
+        // /var/cache/siafs/
+        opt.cache_dir = calloc(18, sizeof(char));
+        strcpy(opt.cache_dir, "/var/cache/siafs/");
+    }
+
+    if(opt.verbose){
+        fprintf(stderr, "UID: %d\n", uid2);
+        fprintf(stderr, "Homedir: %s\n", opt.cache_dir);
+    }
+
+    opt.L2 = calloc(1, sizeof(sia_cache2_t));
+    opt.L2->key = disk_key;
+    opt.L2->init = disk_init;
+//    opt.L1->set = mc_set;
+//    opt.L1->get = mc_get;
+//    opt.L1->del = mc_del;
+//    opt.L1->flush = mc_flush;
+
+    int status = (opt.L2->init)(opt.cache_dir);
+#endif
     return NULL;
 }
 

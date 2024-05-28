@@ -19,6 +19,11 @@ extern "C"
 #include "memcached_cache.h"
 #endif
 
+#ifdef SIA_DISK_CACHE
+#include "disk_cache.h"
+#endif
+
+
 #define SIA_METACACHE_TTL   600
 #define SIA_BLOCKCHAIN_TTL  3600
 #define SIA_CACHE_TTL       5
@@ -54,6 +59,16 @@ typedef struct sia_cache_s{
     unsigned int (*get)(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
     unsigned int (*flush)(const void *memc);
 } sia_cache_t;
+
+typedef struct sia_cache2_s{
+    char *(*key)(const char *path, const size_t size, const off_t offset);
+    int (*init)(const char *cache_dir);
+    unsigned int (*set)(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration);
+    unsigned int (*del)(const void *memc, const char *key);
+    unsigned int (*get)(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
+    unsigned int (*flush)(const void *memc);
+} sia_cache2_t;
+
 
 // Multi-part upload structures
 typedef struct{
@@ -93,12 +108,13 @@ typedef struct{
     sia_metacache_t *metacache;
 #endif
     sia_cache_t *L1;    // L1 Cache should be a meta cache
-    sia_cache_t *L2;    // L2 Cache should be a data cache
+    sia_cache2_t *L2;    // L2 Cache should be a data cache
 #ifdef SIA_MEMCACHED
     memcached_server_st *servers;
     memcached_st *memc;
 #endif
     cJSON *payload_buffer;
+    char *cache_dir;
 }sia_cfg_t;
 
 char *append(const char before, char *str, const char after);

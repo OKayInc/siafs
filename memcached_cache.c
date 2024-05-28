@@ -10,7 +10,7 @@ char *mc_key(const char *endpoint, const char *path, const char* extra){
     if ((endpoint != NULL) && (path != NULL)){
         char *k = NULL;
         // key: [extra::]endpoint::path
-        int kl = strlen(endpoint) + strlen(path) + 3;
+        unsigned int kl = strlen(endpoint) + strlen(path) + 3;
         if (extra != NULL){
             kl += strlen(extra) + 3;
         }

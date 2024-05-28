@@ -10,6 +10,8 @@ extern "C"
 #include <stdlib.h>
 #include<string.h>
 
+char *get_homedir(void);
+
 #ifdef __cplusplus
 }
 #endif

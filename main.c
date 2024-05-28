@@ -44,6 +44,7 @@ sia_cfg_t opt = {
     .servers = NULL,
     .memc = NULL,
     .payload_buffer = NULL,
+    .cache_dir = NULL,
 #endif
 };
 
