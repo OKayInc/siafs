@@ -75,12 +75,14 @@ unsigned int mc_get(const void *memc, const char *key, void **payload, unsigned 
     memcached_return_t rc;
     size_t klen = strlen(key);
     uint32_t flags;
+    unsigned short int retry = 2;
 
-    *payload = memcached_get((memcached_st *)memc, key, klen, payload_len, &flags, &rc);
-    if ((rc != MEMCACHED_SUCCESS) || (*payload == NULL)){
-        fprintf(stderr, "Couldn't get key %s: %s\n", key, memcached_strerror(memc, rc));
-    }
-
+    do {
+        *payload = memcached_get((memcached_st *)memc, key, klen, payload_len, &flags, &rc);
+        if ((rc != MEMCACHED_SUCCESS) || (*payload == NULL)){
+            fprintf(stderr, "Couldn't get key %s: %s\n", key, memcached_strerror(memc, rc));
+        }
+    } while((--retry > 0) && rc != MEMCACHED_SUCCESS);
     return (unsigned int)rc;
 }
 

@@ -5,22 +5,14 @@ extern "C"
 
 #include "disk_cache.h"
 
-char *disk_key(const char *path, const size_t size, const off_t offset){
+char *disk_key(const char *path){
     char *shash = NULL;
     if (path != NULL){
         char *k = NULL;
-        char s_size[256] = {0};
-        char s_offset[256] = {0};
-        sprintf(s_size, "%lu", size);
-        sprintf(s_offset, "%lu", offset);
-        unsigned int kl = strlen(path) + strlen(s_size) + strlen(s_offset) + 5;
+        unsigned int kl = strlen(path) + 1;
         k = (char *)calloc(kl, sizeof(char));
         if (k != NULL){
             strcpy(k, path);
-            strcat(k,"::");
-            strcat(k,s_size);
-            strcat(k,"::");
-            strcat(k,s_offset);
 
             uint8_t hash[16];
             shash = calloc(33, sizeof(char));
@@ -51,28 +43,91 @@ int disk_init(const char *cache_dir){
     return status;
 }
 
-unsigned int disk_set(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration){
-    memcached_return_t rc;
+// cachedir / md5sum / size.offset.dat
+// cachedir / md5sum / metadata.txt
+unsigned int disk_set(const char *cache_dir, const char *key, const void *payload, const unsigned long int payload_len, size_t size, off_t offset, char *etag){
+    fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", \"%s\", %lu, %lu, %lu, \"%s\")\n", __FILE_NAME__, __LINE__, __func__, cache_dir, key, "*payload", payload_len, size, offset, etag);
+    unsigned int answer = 0;
     size_t klen = strlen(key);
+    // cache_dir should end with /
+    char *full_path = calloc(strlen(cache_dir) + strlen(key) + 2, sizeof(char));
+    if (full_path){
+        strcpy(full_path, cache_dir);
+        strcat(full_path, key);
+        struct stat st = {0};
+        int st_result = stat(full_path, &st);
 
-    rc = memcached_set((memcached_st *)memc, key, klen, payload, payload_len, (time_t)expiration, (uint32_t)0);
-    if (rc != MEMCACHED_SUCCESS)
-        fprintf(stderr, "Couldn't set key: %s\n", memcached_strerror(memc, rc));
+        if (st_result != 0) {
+            int status = mkdir(full_path, 0700);
+            if (status != 0){
+                // Error, directory couldn't be created or accessed
+                fprintf(stderr, "Couldn't create %s.\n", full_path);
+                return answer;
+            }
+        }
 
-    return (unsigned int)rc;
-}
+        st_result = stat(full_path, &st);   // make the test again
+        if (st_result == 0 && S_ISDIR(st.st_mode)){
+            //char *fn = calloc(strlen(full_path) + (int)ceil(log10(offset)) + (int)ceil(log10(size)) + 10, sizeof(char));
+            char *fn = calloc(strlen(full_path) + 64 + 10, sizeof(char));
 
-unsigned int disk_get(const void *memc, const char *key, void **payload, unsigned long int *payload_len){
-    memcached_return_t rc;
-    size_t klen = strlen(key);
-    uint32_t flags;
-
-    *payload = memcached_get((memcached_st *)memc, key, klen, payload_len, &flags, &rc);
-    if ((rc != MEMCACHED_SUCCESS) || (*payload == NULL)){
-        fprintf(stderr, "Couldn't get key %s: %s\n", key, memcached_strerror(memc, rc));
+            if (fn){
+                sprintf(fn, "%s/%ld%s%ld%s", full_path, size, ".", offset, ".dat");      // This is the formula for the naming
+                fprintf(stderr, "%s:%d %s fn: %s\n", __FILE_NAME__, __LINE__, __func__, fn);
+                FILE *f = fopen(fn, "wb");
+                if (f == NULL){
+                    fprintf(stderr, "Couldn't create %s.\n", fn);
+                }
+                else{
+                    fwrite(payload, payload_len, 1, f);
+                    fclose(f);
+                    answer = 1;
+                }
+                free(fn);
+            }
+        }
+        else{
+            fprintf(stderr, "Couldn't access %s.\n", full_path);
+        }
+        free(full_path);
     }
 
-    return (unsigned int)rc;
+    fprintf(stderr, "%s:%d %s answer: %d\n", __FILE_NAME__, __LINE__, __func__, answer);
+    return answer;
+}
+
+unsigned int disk_get(const char *cache_dir, const char *key, void **payload, unsigned long int *payload_len, size_t size, off_t offset){
+    fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", \"%s\", %lu, %lu, %lu)\n", __FILE_NAME__, __LINE__, __func__, cache_dir, key, "*payload", *payload_len, size, offset);
+    unsigned int answer = 0;
+    size_t klen = strlen(key);
+    // cache_dir should end with /
+    char *full_path = calloc(strlen(cache_dir) + strlen(key) + 2, sizeof(char));
+    strcpy(full_path, cache_dir);
+    strcat(full_path, key);
+    struct stat st = {0};
+    if (stat(full_path, &st) == -1) {
+        fprintf(stderr, "%s doesn't exist.\n", full_path);
+    }
+    else{
+        // char *fn = calloc(strlen(full_path) + (int)ceil(log10(offset)) + (int)ceil(log10(size)) + 10, sizeof(char));
+        char *fn = calloc(strlen(full_path) + 64 + 10, sizeof(char));
+        sprintf(fn, "%s/%ld%s%ld%s", full_path, size, ".", offset, ".dat");      // This is the formula for the naming
+        fprintf(stderr, "%s:%d %s fn: %s\n", __FILE_NAME__, __LINE__, __func__, fn);
+        FILE *f = fopen(fn, "rb");
+        if (f == NULL){
+            fprintf(stderr, "Couldn't open %s.\n", fn);
+        }
+        else{
+            *payload = malloc(size);
+            *payload_len = fread(*payload, 1, size, f);
+            fclose(f);
+            answer = 1;
+        }
+        free(fn);
+    }
+    free(full_path);
+
+    return answer;
 }
 
 unsigned int disk_del(const void *memc, const char *key){

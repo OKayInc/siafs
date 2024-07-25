@@ -704,7 +704,7 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     else{
         // /var/cache/siafs/
         opt.cache_dir = calloc(18, sizeof(char));
-        strcpy(opt.cache_dir, "/var/cache/siafs/");
+        strcpy(opt.cache_dir, SIAFS_ROOT_CACHE_DIR);
     }
 
     if(opt.verbose){
@@ -715,8 +715,8 @@ void *siafs_init(struct fuse_conn_info *conn, struct fuse_config *cfg){
     opt.L2 = calloc(1, sizeof(sia_cache2_t));
     opt.L2->key = disk_key;
     opt.L2->init = disk_init;
-//    opt.L1->set = mc_set;
-//    opt.L1->get = mc_get;
+    opt.L2->set = disk_set;
+    opt.L2->get = disk_get;
 //    opt.L1->del = mc_del;
 //    opt.L1->flush = mc_flush;
 

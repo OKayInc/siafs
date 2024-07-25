@@ -6,9 +6,9 @@ extern "C"
 #include "sia_worker_objects.h"
 extern sia_cfg_t opt;
 
-char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, size_t *payload_size){
+char *sia_worker_head_object(sia_cfg_t *opt, const char *path){
     if(opt->verbose){
-        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, %lu)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, *payload_size);
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
     }
 
     CURL *curl = curl_easy_init();
@@ -27,8 +27,6 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     };
 
     // path2 has the encoded file path
-
-
     char *final_url;
     //http://127.0.0.1:9980/api/worker/objects/test with paces.pdf?bucket=default
     final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
@@ -53,6 +51,218 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     http_payload.len = 0;
     http_payload.data = NULL;
 
+    // For now, we won't do any caching on the meta as it is the only way to make sure the data hasn't changed
+    if (payload == NULL){
+        CURL *curl;
+        CURLcode res;
+        curl = curl_easy_init();
+        if(curl) {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "HEAD");
+            curl_easy_setopt(curl, CURLOPT_URL, final_url);
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+            curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, opt->scheme);
+            curl_easy_setopt(curl, CURLOPT_USERNAME, opt->user);
+            curl_easy_setopt(curl, CURLOPT_PASSWORD, opt->password);
+            curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
+            if(opt->verbose){
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            }
+    //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//            if (offset > 0){
+//                char str[256];
+//                sprintf(str, "%ld%s%ld", offset, "-", (offset+size-1));
+//                curl_easy_setopt(curl, CURLOPT_RANGE, str);
+//            }
+//            struct curl_slist *headers = NULL;
+//            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, capture_payload);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http_payload);
+            curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+            res = curl_easy_perform(curl);
+            if(res != CURLE_OK){
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            }
+
+            // Save the following headers
+            // Content-Length
+            // Etag
+            // Last-Modified
+            // Date
+            cJSON *monitor = cJSON_CreateObject();
+            if (monitor != NULL){
+                struct curl_header *header;
+                CURLHcode h;
+
+                h = curl_easy_header(curl, "Content-Length", 0, CURLH_HEADER, -1, &header);
+                if (header->value[strlen(header->value) - 1] == '"'){
+                    header->value[strlen(header->value) - 1] = '\0';
+                }
+                if (header->value[0] == '"'){
+                    memmove(header->value, header->value + 1, strlen(header->value));
+                }
+                if(opt->verbose){
+                    fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                    fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                }
+                if (h == CURLHE_OK){
+                    char *ptr;
+                    cJSON *content_lenght = cJSON_CreateNumber(strtol(header->value, &ptr, 10));
+                    if (content_lenght != NULL){
+                        cJSON_AddItemToObject(monitor, "Content-Length", content_lenght);
+                    }
+                }
+                else{
+                    fprintf(stderr, "curl_easy_perform() failed: %s\n", (char *)curl_easy_strerror(h));
+                }
+
+                ///////////////////////////////////////////////////////////////////
+                h = curl_easy_header(curl, "Etag", 0, CURLH_HEADER, -1, &header);
+                if (header->value[strlen(header->value) - 1] == '"'){
+                    header->value[strlen(header->value) - 1] = '\0';
+                }
+                if (header->value[0] == '"'){
+                    memmove(header->value, header->value + 1, strlen(header->value));
+                }
+                if(opt->verbose){
+                    fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                    fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                }
+                if (h == CURLHE_OK){
+                    char *ptr;
+                    cJSON *etag = cJSON_CreateString(header->value);
+                    if (etag != NULL){
+                        cJSON_AddItemToObject(monitor, "Etag", etag);
+                    }
+                }
+                else{
+                    fprintf(stderr, "curl_easy_perform() failed: %s\n", (char *)curl_easy_strerror(h));
+                }
+
+                //////////////////////////////////////////
+                h = curl_easy_header(curl, "Last-Modified", 0, CURLH_HEADER, -1, &header);
+                if (header->value[strlen(header->value) - 1] == '"'){
+                    header->value[strlen(header->value) - 1] = '\0';
+                }
+                if (header->value[0] == '"'){
+                    memmove(header->value, header->value + 1, strlen(header->value));
+                }
+                if(opt->verbose){
+                    fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                    fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                }
+                if (h == CURLHE_OK){
+                    char *ptr;
+                    cJSON *last_modified = cJSON_CreateString(header->value);
+                    if (last_modified != NULL){
+                        cJSON_AddItemToObject(monitor, "Last-Modified", last_modified);
+                    }
+                }
+                else{
+                    fprintf(stderr, "curl_easy_perform() failed: %s\n", (char *)curl_easy_strerror(h));
+                }
+                //////////////////////////////////////////
+                h = curl_easy_header(curl, "Date", 0, CURLH_HEADER, -1, &header);
+                if (header->value[strlen(header->value) - 1] == '"'){
+                    header->value[strlen(header->value) - 1] = '\0';
+                }
+                if (header->value[0] == '"'){
+                    memmove(header->value, header->value + 1, strlen(header->value));
+                }
+                if(opt->verbose){
+                    fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                    fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                }
+                if (h == CURLHE_OK){
+                    char *ptr;
+                    cJSON *date = cJSON_CreateString(header->value);
+                    if (date != NULL){
+                        cJSON_AddItemToObject(monitor, "Date", date);
+                    }
+                }
+                else{
+                    fprintf(stderr, "curl_easy_perform() failed: %s\n", (char *)curl_easy_strerror(h));
+                }
+
+                payload = cJSON_Print(monitor);
+                cJSON_Delete(monitor);
+
+            }
+//            if (headers != NULL){
+//                curl_slist_free_all(headers);
+//            }
+            curl_easy_cleanup(curl);
+        }
+
+        payload = http_payload.data;
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, "(char *)payload");
+        }
+        //sia_set_to_cache(final_url, http_payload.data);
+
+        free(final_url);
+        free(path2);
+        final_url = NULL;
+    }
+    return (char *)payload;
+}
+
+char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t offset, size_t *payload_size){
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\", %lu, %ld, %lu)\n", __FILE_NAME__, __LINE__, __func__, opt->url, path, size, offset, *payload_size);
+    }
+
+    CURL *curl = curl_easy_init();
+    char *path2 = NULL;
+    if(curl) {
+        char *encoded_path = curl_easy_escape(curl, path, strlen(path));
+        if(encoded_path) {
+            if(opt->verbose){
+                fprintf(stderr, "%s:%d Encoded path: %s\n", __FILE_NAME__, __LINE__, encoded_path);
+            }
+            path2 = malloc(sizeof(encoded_path) * strlen(encoded_path) + 1);
+            strcpy(path2, encoded_path);
+            curl_free(encoded_path);
+        }
+    curl_easy_cleanup(curl);
+    };
+
+    // path2 has the encoded file path
+
+    char *final_url;
+    //http://127.0.0.1:9980/api/worker/objects/test with paces.pdf?bucket=default
+    final_url = malloc( sizeof(opt->unauthenticated_url)*strlen(opt->unauthenticated_url)+
+                        18+
+                        sizeof(path2)*strlen(path2)+
+                        8+
+                        sizeof(opt->bucket)*strlen(opt->bucket)+
+                        1);
+    strcpy(final_url, opt->unauthenticated_url);
+    strcat(final_url, "api/worker/objects");
+    strcat(final_url, path2);
+    strcat(final_url, "?bucket=");
+    strcat(final_url, opt->bucket);
+
+    if(opt->verbose){
+        fprintf(stderr, "%s(\"%s\")\n", __func__, final_url);
+    }
+#ifdef SIA_DISK_CACHE
+    char *disk_key = (opt->L2->key)(path);
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d  %s disk key hash: %s\n", __FILE_NAME__, __LINE__, __func__, disk_key);
+    }
+#endif
+
+//    void *payload = (void *)sia_get_from_cache(final_url);
+    void *payload = NULL;
+    sia_http_payload_t http_payload;
+    http_payload.len = 0;
+    http_payload.data = NULL;
+
+#ifdef SIA_DISK_CACHE
+    unsigned int status = (opt->L2->get)(opt->cache_dir, disk_key, &payload, payload_size, size, offset);
+#endif
+
+
     if (payload == NULL){
         CURL *curl;
         CURLcode res;
@@ -71,7 +281,16 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
     //        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 //            if (offset > 0){
                 char str[256];
-                sprintf(str, "%ld%s%ld", offset, "-", (offset+size-1));
+                off_t offset2 = offset + size - 1;
+                unsigned long int fsize = sia_bus_object_size(opt, path) - 1;
+                off_t offset3 = offset2;
+                if (offset2 > fsize){
+                    offset3 = fsize;
+                    if(opt->verbose){
+                        fprintf(stderr, "%s:%d %lu vs %lu = %lu\n", __FILE_NAME__, __LINE__, offset2, fsize, offset3);
+                    }
+                }
+                sprintf(str, "%ld%s%ld", offset, "-", offset3);
                 curl_easy_setopt(curl, CURLOPT_RANGE, str);
 //            }
 //            struct curl_slist *headers = NULL;
@@ -83,42 +302,96 @@ char *sia_worker_get_object(sia_cfg_t *opt, const char *path, size_t size, off_t
             if(res != CURLE_OK){
                 fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
             }
-            struct curl_header *header;
-            CURLHcode h;
-            h = curl_easy_header(curl, "Content-Length", 0, CURLH_HEADER, -1, &header);
-            if (header->value[strlen(header->value) - 1] == '"'){
-                header->value[strlen(header->value) - 1] = '\0';
-            }
-            if (header->value[0] == '"'){
-                memmove(header->value, header->value + 1, strlen(header->value));
-            }
-            if(opt->verbose){
-                fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
-                fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
-            }
-            if (h == CURLHE_OK){
-                char *ptr;
-                *payload_size = strtol(header->value, &ptr, 10);
-            }
             else{
-                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(h));
-            }
+                long http_code = 0;
+                curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+                if (http_code < 400){
+                    struct curl_header *header;
+                    CURLHcode h;
+                    h = curl_easy_header(curl, "Content-Length", 0, CURLH_HEADER, -1, &header);
+                    if (header->value[strlen(header->value) - 1] == '"'){
+                        header->value[strlen(header->value) - 1] = '\0';
+                    }
+                    if (header->value[0] == '"'){
+                        memmove(header->value, header->value + 1, strlen(header->value));
+                    }
+                    if(opt->verbose){
+                        fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h);
+                        fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header->name, header->value);
+                    }
+
+                    if (h == CURLHE_OK){
+                        char *ptr;
+                        *payload_size = strtol(header->value, &ptr, 10);
+                    }
+                    else{
+                        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(h));
+                    }
+
+                    char *etag = NULL;
+                    etag = sia_bus_object_etag(opt, path);
+//                    if(opt->verbose){
+//                        fprintf(stderr, "%s:%d eTag: %s\n", __FILE_NAME__, __LINE__, etag);
+//                    }
+
+/*
+                    struct curl_header *header2;
+                    CURLHcode h2;
+                    h2 = curl_easy_header(curl, "Etag", 0, CURLH_HEADER, -1, &header2);
+                    if (header2->value[strlen(header2->value) - 1] == '"'){
+                        header2->value[strlen(header2->value) - 1] = '\0';
+                    }
+                    if (header2->value[0] == '"'){
+                        memmove(header2->value, header2->value + 1, strlen(header2->value));
+                    }
+                    if(opt->verbose){
+                        fprintf(stderr, "%s:%d Status: %d\n", __FILE_NAME__, __LINE__, h2);
+                        fprintf(stderr, "%s:%d %s: %s\n", __FILE_NAME__, __LINE__, header2->name, header2->value);
+                    }
+
+                    if (h2 == CURLHE_OK){
+                        char *ptr;
+                        strtol(header2->value, &ptr, 10);
+                        strcpy(etag, header2->value);
+                    }
+                    else{
+                        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(h2));
+                    }
 //            if (headers != NULL){
 //                curl_slist_free_all(headers);
 //            }
+*/
+                    payload = http_payload.data;
+                    if(opt->verbose){
+                        fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, "(char *)payload");
+                    }
+
+#ifdef SIA_DISK_CACHE
+                //sia_set_to_cache(final_url, http_payload.data);
+                    if (etag != NULL){
+                        unsigned int status = (opt->L2->set)(opt->cache_dir, disk_key, payload, *payload_size, size, offset, etag);
+                    }
+                    else{
+                        if(opt->verbose){
+                            fprintf(stderr, "%s:%d  %s eTag is NULL, not skiping disk_set()\n", __FILE_NAME__, __LINE__, __func__);
+                        }
+                    }
+#endif
+                }
+            }
             curl_easy_cleanup(curl);
         }
-
-        payload = http_payload.data;
-        if(opt->verbose){
-            fprintf(stderr, "%s:%d  %s payload: %s\n", __FILE_NAME__, __LINE__, __func__, "(char *)payload");
-        }
-        //sia_set_to_cache(final_url, http_payload.data);
-
         free(final_url);
         free(path2);
         final_url = NULL;
     }
+#ifdef SIA_DISK_CACHE
+    else{
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d  %s dis_get() HIT\n", __FILE_NAME__, __LINE__, __func__);
+        }
+    }
+#endif
     return (char *)payload;
 }
 

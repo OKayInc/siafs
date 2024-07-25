@@ -61,11 +61,11 @@ typedef struct sia_cache_s{
 } sia_cache_t;
 
 typedef struct sia_cache2_s{
-    char *(*key)(const char *path, const size_t size, const off_t offset);
+    char *(*key)(const char *path);
     int (*init)(const char *cache_dir);
-    unsigned int (*set)(const void *memc, const char *key, const void *payload, const unsigned long int payload_len, time_t expiration);
+    unsigned int (*set)(const char *cache_dir, const char *key, const void *payload, const unsigned long int payload_len, size_t size, off_t offset, char *etag);
     unsigned int (*del)(const void *memc, const char *key);
-    unsigned int (*get)(const void *memc, const char *key, void **payload, unsigned long int *payload_len);
+    unsigned int (*get)(const char *cache_dir, const char *key, void **payload, unsigned long int *payload_len, size_t size, off_t offset);
     unsigned int (*flush)(const void *memc);
 } sia_cache2_t;
 

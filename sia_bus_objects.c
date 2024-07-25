@@ -492,6 +492,59 @@ unsigned long int sia_bus_object_size(sia_cfg_t *opt, const char *path){
     return answer;
 }
 
+char *sia_bus_object_etag(sia_cfg_t *opt, const char *path){
+    char *answer = NULL;
+    if(opt->verbose){
+        fprintf(stderr, "%s:%d %s(\"%s\", \"%s\")\n", __FILE_NAME__, __LINE__, __func__, opt->url, path);
+    }
+
+#ifdef SIA_METACACHE
+    sia_metacache_t *meta = find_meta_by_path(opt, path);
+    if (meta != NULL){
+        if (meta->expire < (time(NULL))){
+            // Evaluate
+            if (meta->type == SIA_FILE){
+                answer = meta->size;
+            }
+            if (opt->verbose){
+                fprintf(stderr, "%s:%d SIA_METACACHE HIT: %lu", __FILE_NAME__, __LINE__, answer);
+            }
+            return answer;
+        }
+        else{
+            // Expired
+            del_meta(opt, meta);
+        }
+    }
+#endif
+
+    char *json_payload = sia_bus_objects_json(opt, path);
+    if (json_payload != NULL){
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d json payload: %s\n", __FILE_NAME__, __LINE__, json_payload);
+        }
+        cJSON *monitor_json = cJSON_Parse(json_payload);
+        free(json_payload);
+        if (monitor_json == NULL){
+            const char *error_ptr = cJSON_GetErrorPtr();
+            fprintf(stderr, "%s:%d Error before: %s\n", __FILE_NAME__, __LINE__, error_ptr);
+        }
+        else{
+            cJSON *object = NULL;
+            object = cJSON_GetObjectItemCaseSensitive(monitor_json, "object");
+            if (object){
+                cJSON *etag = cJSON_GetObjectItemCaseSensitive(object, "eTag");
+                if (cJSON_IsString(etag)){
+                    answer = calloc(strlen(etag->valuestring) + 1, sizeof(char));
+                    strcpy(answer, etag->valuestring);
+                }
+            }
+            cJSON_Delete(monitor_json);
+        }
+    }
+    return answer;
+}
+
 char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
     char *answer = NULL;
     sia_object_type_t type = SIA_UNKOWN;
@@ -502,11 +555,16 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
     char *json_payload = NULL;
     char *path2 = NULL;
     if (sia_bus_objects_is_file(opt, path) == 1 ){
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d %s is a file.\n", __FILE_NAME__, __LINE__, path);
+        }
         type = SIA_FILE;
         json_payload = sia_bus_objects_json(opt, path);
     }
     else if (sia_bus_objects_is_dir(opt, path) == 1 ){
-        type = SIA_DIR;
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d %s is a directory.\n", __FILE_NAME__, __LINE__, path);
+        }        type = SIA_DIR;
         if (path[(strlen(path) - 1)] != '/'){
             // Add a / to the end
             char ch = '/';
@@ -519,6 +577,11 @@ char *sia_bus_objects_modtime(sia_cfg_t *opt, const char *path){
             strcpy(path2, path);
         }
         json_payload = sia_bus_objects_list_json(opt, path2);
+    }
+    else{
+        if(opt->verbose){
+            fprintf(stderr, "%s:%d %s is something else.\n", __FILE_NAME__, __LINE__, path);
+        }
     }
     if (json_payload != NULL){
         if(opt->verbose){

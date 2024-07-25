@@ -50,6 +50,8 @@
 
 #define KB_IN_GB				1048576
 
+#define SIAFS_ROOT_CACHE_DIR	"/var/cache/siafs/"
+
 #include "sia.h"
 #include "homedir.h"
 
