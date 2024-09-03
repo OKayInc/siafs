@@ -114,6 +114,7 @@ IF (WITH_METACACHE)
 	add_definitions(-DSIA_METACACHE)
 ENDIF(WITH_METACACHE)
 
+target_link_libraries(siafs PUBLIC m)
 
 install(FILES mount.siafs DESTINATION sbin)
 install(TARGETS siafs RUNTIME DESTINATION bin)
