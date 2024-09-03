@@ -15,6 +15,7 @@ The following has been tested:
 * Renaming files and directories.
 * Mount wrappers.
 * L1 Memcached cache.
+* L2 Disk cache.
 
 ## Installing
 siafs uses `CMake`.
@@ -57,12 +58,11 @@ Type:
 Daemon won't fork and a lot of debug info will be displayed.
 
 ## Known Issues
-* Somehow slow for now. Needs L2 caching and optimization review. The first release will focus on the logic only.
-* Performance issues when writting big files with libfuse 2.9.x due to lack of the big_write feature. This doesn't happen with libfuse 3+.
+* Performance issues when writting big files with libfuse 2.9.x due to lack of the big_write feature. This doesn't (a lot) happen with libfuse 3+.
+* The L2 cache directory needs babysitting. It is safe to delete the directories within as you see fit.
 
 ## TODO
-* L2 Cache.
-* Test under diferent conditions.
+* Test under diferent conditions. So far, under laboratory, all went good.
 
 ## Limitations
 The following limitations are due the SIA RenterD api.
